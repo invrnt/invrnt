@@ -6,17 +6,77 @@
       <stop offset="100%" stop-color="#040404"/>
     </linearGradient>
   </defs>
-  <rect x="1" y="1" width="998" height="228" rx="18" fill="url(#cardbg)" stroke="#1c1c1c"/>
-  <line x1="146" y1="100" x2="330" y2="100" stroke="#D4AF37" stroke-width="1" stroke-dasharray="5 6" opacity="0.4"/><circle r="2.2" fill="#F2D477"><animateMotion dur="2.2s" repeatCount="indefinite" path="M146,100 L330,100"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="2.2s" repeatCount="indefinite"/></circle>
-  <line x1="500" y1="100" x2="675" y2="100" stroke="#D4AF37" stroke-width="1" stroke-dasharray="5 6" opacity="0.4"/><circle r="2.2" fill="#F2D477"><animateMotion dur="2.2s" repeatCount="indefinite" path="M500,100 L675,100"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="2.2s" repeatCount="indefinite"/></circle>
-  <rect x="44" y="68" width="92" height="64" rx="14" fill="#0c0c0c" stroke="#D4AF37" stroke-width="1.4"/><rect x="67.5" y="96.0" width="5" height="8" rx="2.5" fill="#F2D477"><animate attributeName="height" values="8;12.8;8" dur="1.60s" repeatCount="indefinite"/><animate attributeName="y" values="96.0;93.6;96.0" dur="1.60s" repeatCount="indefinite"/></rect><rect x="77.5" y="92.5" width="5" height="15" rx="2.5" fill="#F2D477"><animate attributeName="height" values="15;24.0;15" dur="1.72s" repeatCount="indefinite"/><animate attributeName="y" values="92.5;88.0;92.5" dur="1.72s" repeatCount="indefinite"/></rect><rect x="87.5" y="89.0" width="5" height="22" rx="2.5" fill="#F2D477"><animate attributeName="height" values="22;35.2;22" dur="1.84s" repeatCount="indefinite"/><animate attributeName="y" values="89.0;82.4;89.0" dur="1.84s" repeatCount="indefinite"/></rect><rect x="97.5" y="93.0" width="5" height="14" rx="2.5" fill="#F2D477"><animate attributeName="height" values="14;22.4;14" dur="1.96s" repeatCount="indefinite"/><animate attributeName="y" values="93.0;88.8;93.0" dur="1.96s" repeatCount="indefinite"/></rect><rect x="107.5" y="95.5" width="5" height="9" rx="2.5" fill="#F2D477"><animate attributeName="height" values="9;14.4;9" dur="2.08s" repeatCount="indefinite"/><animate attributeName="y" values="95.5;92.8;95.5" dur="2.08s" repeatCount="indefinite"/></rect>
-  <text x="150" y="97" font-family="SFMono-Regular,Consolas,monospace" font-size="19" fill="#F2D477" opacity="0">“Lent Kevin $5,000 at 1.5%/mo”<animate attributeName="opacity" values="1;1;1;1;0;0" keyTimes="0.0000;0.0000;0.0389;0.2944;0.3333;1.0000" dur="9.0s" repeatCount="indefinite" begin="0s"/></text>
-<text x="150" y="97" font-family="SFMono-Regular,Consolas,monospace" font-size="19" fill="#F2D477" opacity="0">“Bought 10 shares of KO”<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0.0000;0.3333;0.3722;0.6278;0.6667;1.0000" dur="9.0s" repeatCount="indefinite" begin="0s"/></text>
-<text x="150" y="97" font-family="SFMono-Regular,Consolas,monospace" font-size="19" fill="#F2D477" opacity="0">“Fixed the Ontario rental, $12k”<animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0.0000;0.6667;0.7056;0.9611;1.0000;1.0000" dur="9.0s" repeatCount="indefinite" begin="0s"/></text>
-  <rect x="425.0" y="45.0" width="150" height="110" rx="16" fill="#0c0c0c" stroke="#D4AF37" stroke-width="1.4"/><g><ellipse cx="500" cy="120" rx="46" ry="14" fill="none" stroke="#D4AF37" stroke-width="0.8" opacity="0.35"/><circle r="2.6" fill="#F2D477"><animateMotion dur="3.4s" repeatCount="indefinite" path="M454,120 a46,14 0 1,0 92,0 a46,14 0 1,0 -92,0"/></circle></g><circle cx="482" cy="94" r="4.2" fill="#D4AF37"><animate attributeName="opacity" values="0.25;1;0.25" dur="1.2s" begin="0.0s" repeatCount="indefinite"/><animate attributeName="r" values="3.4;5;3.4" dur="1.2s" begin="0.0s" repeatCount="indefinite"/></circle><circle cx="500" cy="94" r="4.2" fill="#D4AF37"><animate attributeName="opacity" values="0.25;1;0.25" dur="1.2s" begin="0.25s" repeatCount="indefinite"/><animate attributeName="r" values="3.4;5;3.4" dur="1.2s" begin="0.25s" repeatCount="indefinite"/></circle><circle cx="518" cy="94" r="4.2" fill="#D4AF37"><animate attributeName="opacity" values="0.25;1;0.25" dur="1.2s" begin="0.5s" repeatCount="indefinite"/><animate attributeName="r" values="3.4;5;3.4" dur="1.2s" begin="0.5s" repeatCount="indefinite"/></circle><text x="500" y="152" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10.5" letter-spacing="1" fill="#D4AF37" opacity="0.5">LEDGERS · PODS · FX · CRONS</text>
-  <circle cx="870" cy="100" r="34" fill="#0c0c0c" stroke="#D4AF37" stroke-width="1.4"/><path d="M856,101 L866,111 L886,89" fill="none" stroke="#F2D477" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="46" stroke-dashoffset="46"><animate attributeName="stroke-dashoffset" values="46;46;0;0;46" keyTimes="0;0.08;0.35;0.85;1" dur="3.0s" repeatCount="indefinite"/></path>
-  <text x="870" y="162" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10.5"
-        letter-spacing="1" fill="#D4AF37" opacity="0.5">BOOKED</text>
-  <text x="90" y="152" text-anchor="middle" font-family="SFMono-Regular,Consolas,monospace" font-size="10.5"
-        letter-spacing="1" fill="#D4AF37" opacity="0.5">YOU SAY</text>
+  <style>
+    .example { animation: examples 12s infinite; }
+    .second { animation-delay: -8s; opacity: 0; }
+    .third { animation-delay: -4s; opacity: 0; }
+    .signal { animation: signal 2.4s linear infinite; }
+    .pulse { animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes examples {
+      0%, 30% { opacity: 1; }
+      33.333%, 96.667% { opacity: 0; }
+      100% { opacity: 1; }
+    }
+    @keyframes signal { to { stroke-dashoffset: -24; } }
+    @keyframes pulse { 50% { opacity: .4; } }
+    @media (prefers-reduced-motion: reduce) {
+      .example, .signal, .pulse { animation: none; }
+      .second, .third { display: none; }
+    }
+  </style>
+  <rect x="1" y="1" width="998" height="228" rx="18" fill="url(#cardbg)" stroke="#24221b"/>
+  <g font-family="SFMono-Regular,Consolas,monospace">
+    <!-- Each stage owns its text area; connectors sit in the gaps. -->
+    <g fill="#C5AC66" font-size="13" letter-spacing="2">
+      <text x="34" y="38">01 / YOU SAY</text>
+      <text x="606" y="38" text-anchor="middle">02 / COUNT</text>
+      <text x="877" y="38" text-anchor="middle">03 / DONE</text>
+    </g>
+
+    <rect x="30" y="58" width="392" height="130" rx="14" fill="#0c0c0c" stroke="#6d5926"/>
+    <g fill="none" stroke="#F2D477" stroke-width="4" stroke-linecap="round">
+      <path class="pulse" d="M52 83v8m9-13v18m9-23v28m9-22v16m9-12v8"/>
+    </g>
+    <g fill="#F2D477" font-size="19">
+      <g class="example">
+        <text x="50" y="133">“Lent Kevin $5,000</text>
+        <text x="50" y="160">at 1.5% a month”</text>
+      </g>
+      <g class="example second">
+        <text x="50" y="133">“Bought 10 shares</text>
+        <text x="50" y="160">of KO”</text>
+      </g>
+      <g class="example third">
+        <text x="50" y="133">“Fixed the Ontario rental,</text>
+        <text x="50" y="160">$12k”</text>
+      </g>
+    </g>
+
+    <g fill="none" stroke="#D4AF37" stroke-width="1.5">
+      <path class="signal" d="M436 122h48M728 122h48" stroke-dasharray="4 8" opacity=".65"/>
+      <path d="m479 117 5 5-5 5M771 117l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <rect x="498" y="58" width="216" height="130" rx="14" fill="#0c0c0c" stroke="#D4AF37" stroke-width="1.2"/>
+    <g fill="none" stroke="#D4AF37" stroke-width="1.2" opacity=".6">
+      <path d="m574 87 32 17 32-17m-64 36 32-19 32 19m-64-36v36m64-36v36"/>
+      <ellipse cx="606" cy="111" rx="48" ry="25"/>
+    </g>
+    <g fill="#F2D477">
+      <circle cx="574" cy="87" r="3"/>
+      <circle cx="638" cy="87" r="3"/>
+      <circle cx="574" cy="123" r="3"/>
+      <circle cx="638" cy="123" r="3"/>
+      <circle class="pulse" cx="606" cy="104" r="5"/>
+    </g>
+    <g fill="#C5AC66" font-size="13" text-anchor="middle">
+      <text x="606" y="157">LEDGERS · PODS</text>
+      <text x="606" y="176">FX · CRON JOBS</text>
+    </g>
+
+    <rect x="790" y="58" width="174" height="130" rx="14" fill="#0c0c0c" stroke="#6d5926"/>
+    <circle cx="877" cy="106" r="25" fill="none" stroke="#D4AF37" stroke-width="1.2"/>
+    <path d="m864 106 9 9 18-20" fill="none" stroke="#F2D477" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="877" y="161" text-anchor="middle" font-size="15" letter-spacing="2" fill="#F2D477">BOOKED</text>
+  </g>
 </svg>
