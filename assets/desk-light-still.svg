@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="896" height="248" viewBox="0 0 896 248" role="img" aria-labelledby="title desc">
+<title id="title">The working desk of invrnt</title>
+<desc id="desc">A transparent gold line drawing of an open notebook, a pencil and a drafting instrument. A pencil line slowly traces an idea across the page.</desc>
+<style>@media(prefers-reduced-motion:reduce){.motion{display:none}}</style>
+<defs><linearGradient id="edge"><stop stop-color="#92703B" stop-opacity="0"/><stop offset=".35" stop-color="#92703B" stop-opacity=".45"/><stop offset=".7" stop-color="#92703B" stop-opacity=".45"/><stop offset="1" stop-color="#92703B" stop-opacity="0"/></linearGradient></defs>
+<g fill="none" stroke="#CABDA6" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+<path d="M52 209H844" stroke="url(#edge)"/>
+<path d="M98 72h54m-54 8h34m-34 8h43"/>
+<path d="M112 117h74v48h-74zM120 109h74v48"/>
+<path d="M124 132h19m-19 9h42m-42 9h29"/>
+<path d="M256 64Q313 47 390 65Q467 47 524 64V181Q462 166 390 186Q318 166 256 181Z" stroke="#92703B" stroke-width="1.5"/>
+<path d="M250 69v119q68-15 140 4q72-19 140-4V69M390 66v120"/>
+<path d="M280 88q39-7 84 1m-84 14q39-7 84 1m-84 14q25-5 46-3"/>
+<path d="M414 148q37-8 85-2m-85 14q28-7 56-4"/>
+<path d="M421 66v29l7-5l7 4V64" stroke="#92703B"/>
+<path d="M280 157l17-19l25 11l23-22l19 7"/>
+<circle cx="280" cy="157" r="2"/><circle cx="364" cy="134" r="2"/>
+<g transform="rotate(18 567 128)"><path d="M564 58h7v124l-3.5 12-3.5-12Z" stroke="#92703B"/><path d="M564 68h7M564 178h7M568 70v102"/></g>
+<circle cx="697" cy="124" r="53"/><circle cx="697" cy="124" r="38" stroke-dasharray="164 75" transform="rotate(-70 697 124)"/>
+<path d="M628 124h22m94 0h22M697 55v22m0 94v22"/>
+<path d="M679 106l36 36m-36 0l36-36" stroke="#92703B"/>
+<circle cx="697" cy="124" r="7" stroke="#92703B"/>
+<path d="M745.00 124.00L750.00 124.00"/><path d="M746.04 133.75L748.98 134.34"/><path d="M743.19 143.13L745.97 144.28"/><path d="M738.57 151.78L741.07 153.45"/><path d="M730.94 157.94L734.48 161.48"/><path d="M724.78 165.57L726.45 168.07"/><path d="M716.13 170.19L717.28 172.97"/><path d="M706.75 173.04L707.34 175.98"/><path d="M697.00 172.00L697.00 177.00"/><path d="M687.25 173.04L686.66 175.98"/><path d="M677.87 170.19L676.72 172.97"/><path d="M669.22 165.57L667.55 168.07"/><path d="M663.06 157.94L659.52 161.48"/><path d="M655.43 151.78L652.93 153.45"/><path d="M650.81 143.13L648.03 144.28"/><path d="M647.96 133.75L645.02 134.34"/><path d="M649.00 124.00L644.00 124.00"/><path d="M647.96 114.25L645.02 113.66"/><path d="M650.81 104.87L648.03 103.72"/><path d="M655.43 96.22L652.93 94.55"/><path d="M663.06 90.06L659.52 86.52"/><path d="M669.22 82.43L667.55 79.93"/><path d="M677.87 77.81L676.72 75.03"/><path d="M687.25 74.96L686.66 72.02"/><path d="M697.00 76.00L697.00 71.00"/><path d="M706.75 74.96L707.34 72.02"/><path d="M716.13 77.81L717.28 75.03"/><path d="M724.78 82.43L726.45 79.93"/><path d="M730.94 90.06L734.48 86.52"/><path d="M738.57 96.22L741.07 94.55"/><path d="M743.19 104.87L745.97 103.72"/><path d="M746.04 114.25L748.98 113.66"/></g><g fill="#554631" font-family="monospace" font-size="9" letter-spacing="2"><text x="98" y="57">INVRNT</text><text x="278" y="39" fill="#92703B">WORK IN PROGRESS</text><text x="668" y="208">FIG. 01</text></g><path d="M414 121q18-29 37-12t48-15" fill="none" stroke="#92703B" stroke-width="1.7" opacity=".7"/></svg>
