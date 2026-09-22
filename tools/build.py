@@ -63,10 +63,8 @@ def group(body, transform="", cls="", extra=""):
 
 
 def svg(name, theme, width, height, title, desc, body, css=""):
-    palette = PALETTES.get(theme,PALETTES["light"])
+    palette = PALETTES[theme]
     variables = ";".join(f"--{k}:{v}" for k, v in palette.items())
-    dark_variables = ";".join(f"--{k}:{v}" for k,v in PALETTES["dark"].items())
-    adaptive = f'@media(prefers-color-scheme:dark){{:root{{{dark_variables}}}}}' if theme=="auto" else ""
     palette = {k:f"var(--{k})" for k in palette}
     regular = b64encode((FONTS / "manrope-regular.woff2").read_bytes()).decode()
     semibold = b64encode((FONTS / "manrope-semibold.woff2").read_bytes()).decode()
@@ -86,7 +84,6 @@ def svg(name, theme, width, height, title, desc, body, css=""):
 @font-face{{font-family:Manrope;src:url(data:font/woff2;base64,{regular}) format('woff2');font-weight:400}}
 @font-face{{font-family:Manrope;src:url(data:font/woff2;base64,{semibold}) format('woff2');font-weight:500 800}}
 :root{{{variables}}}
-{adaptive}
 svg{{font-family:Manrope,Arial,sans-serif;text-rendering:geometricPrecision}}
 .mono{{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace}}
 .rotate{{animation:rotate 24s linear infinite;transform-box:fill-box;transform-origin:center}}
@@ -243,7 +240,7 @@ HERO_CSS='''
 def hero(theme,mobile=False):
     w,h=(640,990) if mobile else (1200,1110)
     margin=36 if mobile else 64
-    out=label(margin,49 if mobile else 55,"JUAN CAMILO GRISALES", "ink",size=18 if mobile else 15)
+    out=label(margin,49 if mobile else 55,"JUAN CAMILO GRISALES", "ink",size=24 if mobile else 15)
     if not mobile:
         out+=label(w-margin,55,"INVRNT / COLOMBIA",anchor="end")
     out+=line(margin,79,w-margin,79)
@@ -252,7 +249,7 @@ def hero(theme,mobile=False):
         out+=text(margin,255,"Less in the way.",67,"ink",500,spacing=-3.6)
         out+=text(margin,322,"Powerful systems. Simple experiences.",25,"muted")
         out+=group(machine(),"translate(15 420) scale(.63)")
-        out+=label(margin,902,"AI ENGINEER & PRODUCT BUILDER",size=17)
+        out+=label(margin,902,"AI ENGINEER & PRODUCT BUILDER",size=20)
         out+=text(margin,948,"One intention. An entire machine behind it.",25,"muted")
     else:
         out+=text(margin,188,"More possible.",100,"ink",500,spacing=-5)
@@ -299,8 +296,8 @@ COUNT_CSS='''
 @keyframes question{0%,9%,98%,100%{opacity:0}16%,46%{opacity:1}52%,94%{opacity:0}}
 @keyframes selected{0%,34%,98%,100%{opacity:0}40%,46%{opacity:1}52%,94%{opacity:0}}
 @keyframes confirmed{0%,49%,97%,100%{opacity:0}55%,91%{opacity:1}}
-@keyframes journal{0%,44%,100%{opacity:.25}55%,91%{opacity:1}}
-@keyframes interest{0%,57%{transform:rotate(-90deg)}83%,96%{transform:rotate(0deg)}100%{transform:rotate(-90deg)}}
+@keyframes journal{0%,44%,100%{opacity:.5}55%,91%{opacity:1}}
+@keyframes interest{0%,55%{transform:rotate(-90deg);opacity:0}58%{transform:rotate(-90deg);opacity:1}83%,94%{transform:rotate(0deg);opacity:1}97%{transform:rotate(0deg);opacity:0}100%{transform:rotate(-90deg);opacity:0}}
 @keyframes posting{0%,47%{stroke-dashoffset:0;opacity:0}51%,88%{opacity:1}92%,100%{stroke-dashoffset:-400;opacity:0}}
 @media(prefers-reduced-motion:reduce){.question,.selected{opacity:0}.confirmed,.journal{opacity:1}.interest-hand{transform:rotate(0deg)}}
 '''
@@ -347,11 +344,11 @@ def count(theme,mobile=False):
     transcript+=text(26,128,"from Bancolombia",31,"ink",500,spacing=-.7)
     transcript+=text(26,163,"at 12% interest.",27,"muted")
     out+=group(transcript,f"translate({ox} {oy})")
-    q=text(0,0,"Is that an effective annual",28,"ink",500,spacing=-.5)
-    q+=text(0,39,"or monthly rate?",28,"ink",500,spacing=-.5)
+    q=text(0,0,"Is that an effective annual",30,"ink",500,spacing=-.5)
+    q+=text(0,39,"or monthly rate?",30,"ink",500,spacing=-.5)
     q+=rect(0,64,239,66,14,"paper","line")+rect(253,64,239,66,14,"paper","line")
-    q+=text(119,106,"Annual",26,"ink",500,"middle")+text(372,106,"Monthly",26,"muted",400,"middle")
-    select=rect(0,64,239,66,14,"faint","gold")+text(119,106,"Annual",26,"glow",500,"middle")
+    q+=text(119,106,"Annual",28,"ink",500,"middle")+text(372,106,"Monthly",28,"muted",400,"middle")
+    select=rect(0,64,239,66,14,"faint","gold")+text(119,106,"Annual",28,"glow",500,"middle")
     q+=group(select,cls="selected")
     out+=group(group(q,cls="question"),f"translate({ox+14} {oy+245})")
     saved=circle(27,30,27,"paper","gold")
@@ -546,7 +543,7 @@ def product(name,theme,mobile=False):
     out=section_top(w,mobile,number,title,"")
     out+=text(m,149 if mobile else 197,headline,55 if mobile else 57,"ink",500,spacing=-2.7)
     for i,value in enumerate(body):
-        out+=text(m,(209 if mobile else 255)+i*37,value,26 if mobile else 26,"muted")
+        out+=text(m,(209 if mobile else 255)+i*37,value,29 if mobile else 26,"muted")
     cta={"classmate":"EXPLORE CLASSMATE ↗","orientador":"EXPLORE ORIENTADOR ↗","bento":"VIEW THE SOURCE ↗"}[name]
     out+=label(m,296 if mobile else 368,cta,"glow",size=17 if mobile else 13)
     placement=("translate(22 350) scale(.85)" if mobile else "translate(558 110) scale(.88)") if name=="bento" else ("translate(25 305) scale(.96)" if mobile else "translate(558 101) scale(.99)")
@@ -561,9 +558,9 @@ AMBITION_CSS='''
 .research{animation:research 8s ease-in-out infinite}
 .work-arm{animation:work-arm 8s ease-in-out infinite;transform-origin:0 0}
 .growth{animation:growth 24s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom}
-@keyframes build-one{0%,100%{opacity:.3;transform:translateY(12px)}12%,92%{opacity:1;transform:translateY(0)}}
-@keyframes build-two{0%,12%,100%{opacity:.15;transform:translateY(18px)}28%,92%{opacity:1;transform:translateY(0)}}
-@keyframes build-three{0%,28%,100%{opacity:.12;transform:translateY(22px)}45%,92%{opacity:1;transform:translateY(0)}}
+@keyframes build-one{0%,100%{opacity:.7;transform:translateY(12px)}12%,92%{opacity:1;transform:translateY(0)}}
+@keyframes build-two{0%,12%,100%{opacity:.55;transform:translateY(18px)}28%,92%{opacity:1;transform:translateY(0)}}
+@keyframes build-three{0%,28%,100%{opacity:.4;transform:translateY(22px)}45%,92%{opacity:1;transform:translateY(0)}}
 @keyframes research{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 @keyframes work-arm{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(18deg)}}
 @keyframes growth{0%,30%,100%{transform:scaleY(.35);opacity:.3}62%,92%{transform:scaleY(1);opacity:1}}
@@ -592,8 +589,8 @@ def laboratory():
     body=path("M-32 0Q-54 -74 -26 -127L-7 -135",stroke="deep",width=22,extra='stroke-linecap="round"')
     body+=path("M-32 0Q-54 -74 -26 -127L-7 -135",stroke="metalmid",width=16,extra='stroke-linecap="round"')
     body+=path("M-35 -3Q-56 -75 -28 -127",stroke="metalhi",width=2.2)
-    body+=group(group(rect(-10,-148,28,76,5,"url(#metal)","edge")+rect(-6,-160,20,15,3,"deep","edge")+
-                rect(-5,-71,18,22,2,"url(#brass)","goldlo"),cls="research"),"rotate(22)")
+    body+=group(rect(-10,-148,28,76,5,"url(#metal)","edge")+rect(-6,-160,20,15,3,"deep","edge")+
+                rect(-5,-71,18,22,2,"url(#brass)","goldlo"),cls="research")
     body+=path("M-28 -33L30 -46L55 -32L-5 -17Z","deep","edge")
     body+=path("M-13 -33L15 -39L32 -30L4 -24Z","url(#glass)","gold")
     body+=circle(-36,-59,15,"url(#brass)","goldlo")+circle(-36,-59,6,"url(#metal)","edge")
@@ -683,11 +680,18 @@ SCENES={"hero":hero,"count":count,"architecture":architecture,
 
 def picture(name,alt,href=None):
     alt=escape(alt,quote=True)
-    block=f'''<picture>
-  <source media="(max-width: 600px)" srcset="assets/{name}-mobile.svg">
-  <img src="assets/{name}.svg" width="100%" alt="{alt}">
-</picture>'''
-    return f'<a href="{href}">\n{block}\n</a>' if href else block
+    blocks=[]
+    for theme in PALETTES:
+        target=href if href and not href.startswith('mailto:') else ("https://juancamilo.me" if href else f"assets/{name}-{theme}.svg")
+        blocks.append(f'''<a href="{target}#gh-{theme}-mode-only">
+<picture>
+  <source media="(max-width: 600px) and (prefers-reduced-motion: reduce)" srcset="assets/{name}-mobile-{theme}-still.svg">
+  <source media="(prefers-reduced-motion: reduce)" srcset="assets/{name}-{theme}-still.svg">
+  <source media="(max-width: 600px)" srcset="assets/{name}-mobile-{theme}.svg">
+  <img src="assets/{name}-{theme}.svg" width="100%" alt="{alt}">
+</picture>
+</a>''')
+    return "\n".join(blocks)
 
 
 def readme():
@@ -759,11 +763,15 @@ def control_stl():
 def build():
     ASSETS.mkdir(exist_ok=True)
     for name,fn in SCENES.items():
-        for mobile in (False,True):
-            suffix="-mobile" if mobile else ""
-            target=ASSETS/f"{name}{suffix}.svg"
-            target.write_text(fn("auto",mobile))
-            print(f"{target.relative_to(ROOT)}  {target.stat().st_size:,} bytes")
+        for theme in PALETTES:
+            for mobile in (False,True):
+                suffix="-mobile" if mobile else ""
+                target=ASSETS/f"{name}{suffix}-{theme}.svg"
+                artwork=fn(theme,mobile)
+                target.write_text(artwork)
+                still=ASSETS/f"{name}{suffix}-{theme}-still.svg"
+                still.write_text(artwork.replace('@media(prefers-reduced-motion:reduce)','@media all'))
+                print(f"{target.relative_to(ROOT)}  {target.stat().st_size:,} bytes")
     (ROOT/"README.md").write_text(readme())
     (ASSETS/"control.stl").write_bytes(control_stl())
 

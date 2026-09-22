@@ -28,18 +28,18 @@ class Readme(HTMLParser):
         for key in ["src","srcset","href"]:
             value=attrs.get(key,"")
             if value.startswith("assets/"):
-                check((ROOT/value).is_file(),f"Missing README target: {value}")
+                check((ROOT/value.split('#')[0]).is_file(),f"Missing README target: {value}")
 
 
 files=sorted((ROOT/"assets").glob("*.svg"))
-check(len(files)==16,f"Expected 16 art-directed variants, found {len(files)}")
+check(len(files)==64,f"Expected 32 animated and 32 still variants, found {len(files)}")
 for file in files:
     raw=file.read_text()
     doc=ET.fromstring(raw)
     check(doc.find(SVG+"title") is not None,f"{file.name}: missing title")
     check(doc.find(SVG+"desc") is not None,f"{file.name}: missing description")
-    check("prefers-reduced-motion:reduce" in raw,f"{file.name}: no motion preference")
-    check("prefers-color-scheme:dark" in raw,f"{file.name}: no adaptive palette")
+    motion_rule="@media all" if file.stem.endswith('-still') else "prefers-reduced-motion:reduce"
+    check(motion_rule in raw,f"{file.name}: no motion preference or static state")
     check(file.stat().st_size<100_000,f"{file.name}: oversized asset")
     ids=[n.attrib["id"] for n in doc.iter() if "id" in n.attrib]
     check(len(ids)==len(set(ids)),f"{file.name}: duplicate IDs")
@@ -72,4 +72,4 @@ if errors:
     raise SystemExit("\n".join(errors))
 total=sum(p.stat().st_size for p in files)
 print(f"PASS: {len(files)} SVGs, README references, isolated resources, reduced motion, and {count} closed STL facets.")
-print(f"SVG variants: {total:,} bytes total. Only one variant per scene is loaded.")
+print(f"SVG variants: {total:,} bytes total. GitHub displays one theme per scene.")
