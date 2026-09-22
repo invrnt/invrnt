@@ -1,87 +1,91 @@
+<!-- Generated with python3 tools/build.py. Text edition below. -->
+
 <picture>
-  <source media="(prefers-reduced-motion: reduce)" srcset="assets/header-still.svg" />
-  <img src="assets/header.svg" width="100%" alt="A calm, simple interface sits above a still waterline. Below it, a dense, living mesh of golden connections — all the complexity the interface hides." />
+  <source media="(max-width: 600px)" srcset="assets/hero-mobile.svg">
+  <img src="assets/hero.svg" width="100%" alt="Juan Camilo Grisales, AI engineer and product builder in Medellín, Colombia. More possible. Less in the way. Powerful systems, simple experiences.">
 </picture>
 
-<div align="center">
+<p align="center">
+  <a href="https://juancamilo.me">Website ↗</a> &nbsp; · &nbsp; <a href="mailto:juan@juancamilo.me">Email ↗</a>
+</p>
 
-# Juan Camilo
-
-**AI Engineer & Product Builder · Colombia**
-
-*Complexity compounds inside. Simplicity ships outside.*
-
-![status](https://img.shields.io/static/v1?label=&message=currently%20building%20Count&color=0a0a0a&style=flat-square)
-
-[Website](https://juancamilo.me) · [Email](mailto:hi@juancamilo.me) · [LinkedIn](https://linkedin.com/in/jc-ga) · [Repositories](https://github.com/invrnt?tab=repositories)
-
-</div>
-
-<img src="assets/divider.svg" width="100%" alt="" />
-
-### 00 — Philosophy
-
-Every system I build follows one rule: push the complexity inward, strip it from the surface. The engine underneath can be enormous — double-entry ledgers, multi-agent reasoning, live market data, legal edge cases. What reaches the person using it is one sentence, one voice note, one tap. Never more than that.
-
-<img src="assets/divider.svg" width="100%" alt="" />
-
-### 01 — Count · finance you talk to
-
-A personal finance system with no forms.
-
-- Say **"Lent Kevin $5,000 from Bancolombia at 1.5% a month"** — it leaves the right Pod, opens a debt ledger, and compounds the exact interest on its own.
-- Say **"Bought 10 shares of KO"** — live price tracking, dividends booked the day they land.
-- Say **"Fixed up the Ontario rental, $12k"** — Count re-appraises it against comparable listings and updates the value.
-
-When something's ambiguous, it asks — once, in plain language, on a screen built to be answered with a tap.
-
-<img src="assets/count-flow.svg" width="100%" alt="A spoken instruction enters a hidden engine of ledgers, pods and live prices, and a simple booked confirmation comes out." />
-
-Underneath: double-entry ledgers, Pods, live market data, real-estate comps, cron jobs quietly compounding interest every night. None of it visible. That's the design, not an accident.
-
-<sub>Private project, in development.</sub>
-
-<img src="assets/divider.svg" width="100%" alt="" />
-
-### 02 — Also shipping
-
-- **[Classmate Studio](https://classmate.studio)** — an agent that runs a student's academic life. Give it a rubric, get back a finished paper: sourced, reasoned, typeset, written in the student's own voice.
-- **[Orientador.co](https://orientador.co)** — Colombian school counselors stop doing paperwork. Compliance forms and case files get generated, not filled in.
-
-<img src="assets/divider.svg" width="100%" alt="" />
-
-### 03 — Why this matters
-
-<img src="assets/ascension.svg" width="100%" alt="Bars rising steadily across industries, beneath a slowly climbing horizon." />
-
-AI's biggest unlock isn't conversation — it's collapsing the cost of complex, valuable work until every industry can afford to be ambitious again. That compounding, not the models themselves, is what gets us close to utopia once ASI arrives.
-
-<img src="assets/divider.svg" width="100%" alt="" />
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/count-mobile.svg">
+  <img src="assets/count.svg" width="100%" alt="Count. Finance, in your own words. Product concept, in development. A voice note becomes a precise, balanced financial record. When a rate is ambiguous, Count asks a clear question.">
+</picture>
 
 <details>
-<summary><b>04 — Stack</b> (the complexity behind sections 01–02)</summary>
-<br>
+<summary>Open the machine</summary>
 
-`AI & Agents` — LangChain · LangGraph · n8n · multi-agent orchestration · RAG / embeddings
 
-`Backend` — Python · FastAPI · Django · PostgreSQL
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/architecture-mobile.svg">
+  <img src="assets/architecture.svg" width="100%" alt="Inside Count. Simple is engineered: intent, clarification, exact double-entry records, time-aware calculations, and an inspectable result.">
+</picture>
 
-`Frontend` — Next.js · React · TypeScript · Tailwind CSS
+Count is in development. The animation illustrates the intended experience. Its design combines account-specific Pods, double-entry accounting and time-aware calculations. Ambiguity becomes a clear question. The detail stays available.
 
-`Infra` — Cloudflare Workers / D1 / R2 · AWS Lambda · Google Cloud Run · Docker
-
-`Also in the toolkit` — Public accounting · Colombian regulatory frameworks · Typst / LaTeX
+[Inspect the control in 3D ↗](assets/control.stl)
 
 </details>
 
-<img src="assets/divider.svg" width="100%" alt="" />
+<a href="https://classmate.studio">
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/classmate-mobile.svg">
+  <img src="assets/classmate.svg" width="100%" alt="Classmate Studio. Room to think. Course materials, recordings and AI in one shared context. Explore Classmate.">
+</picture>
+</a>
 
-<div align="center">
+<a href="https://orientador.co">
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/orientador-mobile.svg">
+  <img src="assets/orientador.svg" width="100%" alt="Orientador. Time to listen. AI-assisted documentation for school counselors, with professional review. Explore Orientador.">
+</picture>
+</a>
 
-Open to conversations with engineering teams and fellow builders.
+<a href="https://github.com/invrnt/bento">
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/bento-mobile.svg">
+  <img src="assets/bento.svg" width="100%" alt="Bento. Yours to keep. A local-first home for your files. Explore the source.">
+</picture>
+</a>
 
-[Website](https://juancamilo.me) · [Email](mailto:hi@juancamilo.me) · [LinkedIn](https://linkedin.com/in/jc-ga) · [Repositories](https://github.com/invrnt?tab=repositories)
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/ambition-mobile.svg">
+  <img src="assets/ambition.svg" width="100%" alt="Make room for bigger ambitions. I want AI to make economically valuable work cheaper and help every industry attempt more. Toward ASI, toward broadly shared abundance.">
+</picture>
 
-<sub>Built to look simple. Engineered not to be.</sub>
+<a href="mailto:juan@juancamilo.me">
+<picture>
+  <source media="(max-width: 600px)" srcset="assets/contact-mobile.svg">
+  <img src="assets/contact.svg" width="100%" alt="What should become simpler? Let&#x27;s build it. Contact Juan Camilo Grisales.">
+</picture>
+</a>
 
-</div>
+<p align="center">
+  <a href="mailto:juan@juancamilo.me">juan@juancamilo.me ↗</a> &nbsp; · &nbsp; <a href="https://juancamilo.me">juancamilo.me ↗</a>
+</p>
+
+<details>
+<summary>Text edition</summary>
+
+# Juan Camilo Grisales
+
+AI engineer and product builder in Medellín, Colombia.
+
+**More possible. Less in the way.**
+
+I build powerful systems that ask less of the people using them. Push capability inward. Make the experience simpler. Keep the underlying detail available to inspect.
+
+- **Count**, in development. A personal finance system designed to turn everyday messages into precise records. In the illustrated example, a US$5,000 loan comes from a Bancolombia Pod. Count clarifies whether 12% is an effective annual or monthly rate before recording the bank decrease and the equal receivable.
+- [Classmate Studio](https://classmate.studio). Course materials, recordings and AI in one academic workspace.
+- [Orientador](https://orientador.co). AI-assisted documentation for school counselors, with professional review.
+- [Bento](https://github.com/invrnt/bento). A local-first home for your files.
+
+I want AI to make economically valuable work dramatically cheaper, so people across every industry can attempt more. As we move toward ASI, I want to help turn that capability into broadly shared abundance.
+
+What should become simpler? [Let's build it](mailto:juan@juancamilo.me).
+
+[Website](https://juancamilo.me) · [Email](mailto:juan@juancamilo.me)
+
+</details>
