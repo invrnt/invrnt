@@ -1,6 +1,10 @@
 # The interface steps aside
 
-A GitHub profile for Juan Camilo Grisales. It opens as GitHub's own contribution graph and activity feed, redrawn at native size with real data. Then the surface splits between Wednesday and Thursday, the lower half drops away, and beneath it is the promise and the precision machine that keeps it: *More possible. Less in the way.* One amber signal runs from under that surface through every scene and ends in a single ceramic control.
+A GitHub profile for Juan Camilo Grisales. It opens as GitHub's own contribution graph and activity feed, redrawn at native size with real data. Then the surface splits between Wednesday and Thursday, the lower half drops away, and beneath it is the promise and the system that keeps it, drawn as a chip seen from above: *More possible. Less in the way.* One amber signal runs from under that surface through every scene and ends in a single ceramic control.
+
+## Visual language
+
+Interface on top, system underneath. There are no isometric illustrations. Each scene shows what a product produces as interface, at a fidelity close to the real thing, and lets the mechanism show through: entities outlined in a sentence, citations wired to their sources, files leaving one window for another. GitHub's own interface is set in Mona Sans; everything that belongs to Juan's products is set in Manrope. The one physical object, the ceramic control, is real 3D in GitHub's viewer.
 
 ## Build
 
@@ -18,10 +22,10 @@ The builder uses only Python's standard library and never touches the network. I
 
 | File | Role |
 | --- | --- |
-| `tools/build.py` | Scenes, drawing primitives, the machine, README generation, STL. |
+| `tools/build.py` | Scenes, drawing primitives, the die, product interfaces, README generation, STL. |
 | `tools/surface.py` | GitHub's interface at native pixel size: calendar, activity feed, file table, Octicons. |
 | `tools/fetch.py` | Snapshot of the contribution calendar, this month's activity and Bento's file list. |
-| `tools/fonts` | Manrope and Mona Sans subsets, plus precomputed Mona Sans advance widths for text fitting. |
+| `tools/fonts` | Manrope and Mona Sans subsets, plus precomputed advance widths for both, used to fit text without a browser. |
 
 Manrope (`docs/Manrope-OFL.txt`) sets the profile's own voice. Mona Sans (`docs/MonaSans-OFL.txt`) is GitHub's typeface, embedded only where the interface is imitated, so the imitation matches the page around it. Octicons are MIT licensed.
 
@@ -29,13 +33,14 @@ Manrope (`docs/Manrope-OFL.txt`) sets the profile's own voice. Mona Sans (`docs/
 
 | Scene | Purpose | Motion |
 | --- | --- | --- |
-| Hero | The interface steps aside | Native graph and feed for 2.8 s, a glitch along the cut, the lower half drops, the machine works, the surface closes. 20 s. |
+| Hero | The interface steps aside | Native graph and feed for 2.8 s, a glitch along the cut, the lower half drops. Beneath, a die: intent, memory, tools, a reasoning core, verification, one control out. Buses carry pulses; compute units light in diagonal waves. 20 s. |
 | Count | One natural-language instruction becomes precise accounting | Voice note, ambiguity, selection, balanced posting. 24 s. |
 | Port | Detail stays available | A porcelain button on the signal line. It is the `summary` of a native `details`. |
-| Architecture | Simple is engineered | Five layers, plus the control in GitHub's inline 3D viewer. |
-| Classmate, Orientador | Different materials share one context; documentation leaves room to listen | 12 s loops. |
-| Bento | Your files stay yours | GitHub's file table for Bento drains row by row into a local enclosure. 12 s. |
-| Ambition | Productivity enables larger projects | Workshop, instrument, greenhouse. 24 s. |
+| Architecture | Simple is engineered | One real sentence through five layers, each shown as its interface: entities, a clarifying question, a balanced entry, monthly accrual, the record. Layers light in turn. Plus the control in GitHub's inline 3D viewer. |
+| Classmate | Different materials share one context | Audio, PDF and slides beside one answer; as it is written, citations wire each claim to its source. 12 s. |
+| Orientador | Documentation leaves room to listen | The conversation appears only as rhythm, never words. A session note assembles as a draft and the counselor signs it off. 12 s. |
+| Bento | Your files stay yours | GitHub's file table for Bento drains row by row; each file lands in its own tile in Bento's window, on this device, and the table says where they went. 12 s. |
+| Ambition | Productivity enables larger projects | A contribution graph for whole industries, seven rows like seven days. The cost of trying falls and the columns bloom in turn. 24 s. |
 | Contact and keys | Return to one simple control | The signal turns and ends in the control. Three porcelain keys are real links. |
 
 ## GitHub constraints

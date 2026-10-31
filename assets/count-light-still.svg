@@ -5,8 +5,6 @@
 <linearGradient id="porcelain" x1="0" y1="0" x2="0.8" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="var(--top)"/><stop offset="1" stop-color="var(--middle)"/></linearGradient>
 <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="var(--metalhi)"/><stop offset=".35" stop-color="var(--metalmid)"/><stop offset=".6" stop-color="var(--metalhi)"/><stop offset="1" stop-color="var(--metallo)"/></linearGradient>
 <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="var(--goldhi)"/><stop offset=".42" stop-color="var(--gold)"/><stop offset="1" stop-color="var(--goldlo)"/></linearGradient>
-<linearGradient id="brass-edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--gold)"/><stop offset="1" stop-color="var(--goldlo)"/></linearGradient>
-<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="var(--metalhi)" stop-opacity=".13"/><stop offset=".55" stop-color="var(--metalhi)" stop-opacity=".01"/><stop offset="1" stop-color="var(--metalhi)" stop-opacity=".16"/></linearGradient>
 <radialGradient id="halo"><stop stop-color="var(--gold)" stop-opacity=".12"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></radialGradient>
 <filter id="shadow" x="-50%" y="-60%" width="200%" height="230%"><feGaussianBlur stdDeviation="14"/></filter>
 

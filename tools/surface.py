@@ -12,6 +12,7 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 WIDTHS = loads((HERE / "fonts/mona-sans-widths.json").read_text())
+MANROPE = loads((HERE / "fonts/manrope-widths.json").read_text())
 DATA = loads((HERE / "data/github.json").read_text())
 
 NATIVE = {
@@ -41,8 +42,8 @@ CELL, PITCH = 10, 13
 GRID_X, GRID_Y = 45.8, 35
 
 
-def measure(value, size, weight=400):
-    table = WIDTHS["semibold" if weight >= 600 else "regular"]
+def measure(value, size, weight=400, family=None):
+    table = (family or WIDTHS)["semibold" if weight >= (500 if family is MANROPE else 600) else "regular"]
     return sum(table.get(ch, .55) for ch in value) * size
 
 

@@ -7,7 +7,8 @@ from math import cos, sin, pi
 from pathlib import Path
 import struct
 
-from surface import CELL, DATA, GRID_X, GRID_Y, NATIVE, PITCH, calendar, feed, file_list, rrect
+from surface import DATA, GRID_X, GRID_Y, MANROPE, NATIVE, PITCH, calendar, feed, file_list, measure, rrect
+from surface import fit, t as t_native
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets"
@@ -84,8 +85,6 @@ def svg(name, theme, width, height, title, desc, body, css="", native=False, def
 <linearGradient id="porcelain" x1="0" y1="0" x2="0.8" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="{palette['top']}"/><stop offset="1" stop-color="{palette['middle']}"/></linearGradient>
 <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="{palette['metalhi']}"/><stop offset=".35" stop-color="{palette['metalmid']}"/><stop offset=".6" stop-color="{palette['metalhi']}"/><stop offset="1" stop-color="{palette['metallo']}"/></linearGradient>
 <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="{palette['goldhi']}"/><stop offset=".42" stop-color="{palette['gold']}"/><stop offset="1" stop-color="{palette['goldlo']}"/></linearGradient>
-<linearGradient id="brass-edge" x1="0" y1="0" x2="0" y2="1"><stop stop-color="{palette['gold']}"/><stop offset="1" stop-color="{palette['goldlo']}"/></linearGradient>
-<linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="{palette['metalhi']}" stop-opacity=".13"/><stop offset=".55" stop-color="{palette['metalhi']}" stop-opacity=".01"/><stop offset="1" stop-color="{palette['metalhi']}" stop-opacity=".16"/></linearGradient>
 <radialGradient id="halo"><stop stop-color="{palette['gold']}" stop-opacity=".12"/><stop offset="1" stop-color="{palette['gold']}" stop-opacity="0"/></radialGradient>
 <filter id="shadow" x="-50%" y="-60%" width="200%" height="230%"><feGaussianBlur stdDeviation="14"/></filter>
 {defs}
@@ -111,128 +110,6 @@ svg{{font-family:Manrope,Arial,sans-serif;text-rendering:geometricPrecision}}
 </svg>\n'''
 
 
-# An orthographic engineering drawing. All objects share this camera and lighting.
-def point(x, y, z=0):
-    return (round(380 + (x - y) * .94, 2), round(185 + (x + y) * .42 - z, 2))
-
-
-def poly(points, fill, stroke="edge", extra=""):
-    f = fill if fill.startswith("url(") else f"var(--{fill})"
-    s = stroke if stroke == "none" else f"var(--{stroke})"
-    return '<polygon points="' + " ".join(f"{a},{b}" for a, b in points) + f'" fill="{f}" stroke="{s}" stroke-width="1" stroke-linejoin="round" {extra}/>'
-
-
-def box(x, y, z, w, d, h, top="url(#porcelain)", side="side", front="deep", edge="edge"):
-    a,b,c,e = [point(*p) for p in [(x,y,z+h),(x+w,y,z+h),(x+w,y+d,z+h),(x,y+d,z+h)]]
-    b0,c0,e0 = [point(*p) for p in [(x+w,y,z),(x+w,y+d,z),(x,y+d,z)]]
-    return poly([b,b0,c0,c],side,edge)+poly([e,c,c0,e0],front,edge)+poly([a,b,c,e],top,edge)
-
-
-def iso_line(coords, color="line", width=1, extra=""):
-    pts = [point(*p) for p in coords]
-    return path("M"+" L".join(f"{a} {b}" for a,b in pts),stroke=color,width=width,extra=extra)
-
-
-def disk(x,y,z,r,thickness=10,fill="url(#metal)",edge="edge"):
-    cx,cy=point(x,y,z)
-    rx,ry=r*1.329,r*.594
-    out=f'<path d="M{cx-rx} {cy}v{thickness}a{rx} {ry} 0 0 0 {2*rx} 0v-{thickness}" fill="var(--deep)" stroke="var(--{edge})"/>'
-    out+=f'<ellipse cx="{cx}" cy="{cy}" rx="{rx}" ry="{ry}" fill="{fill if fill.startswith("url(") else f"var(--{fill})"}" stroke="var(--{edge})"/>'
-    return out
-
-
-def fastener(x,y,z):
-    cx,cy=point(x,y,z)
-    return f'<ellipse cx="{cx}" cy="{cy}" rx="3.5" ry="1.65" fill="var(--deep)"/>'+line(cx-1.5,cy,cx+1.5,cy,"edge",.6)
-
-
-def arm(x,y,z,mirror=False,cls=""):
-    # Three solid articulated links; concentric bearings show actual pivots.
-    cx,cy=point(x,y,z)
-    s=-1 if mirror else 1
-    parts=disk(x,y,z,27,13)
-    parts+=group(group(
-        path(f"M0 0 L{-32*s} -64 L{18*s} -112",stroke="deep",width=28,extra='stroke-linecap="round" stroke-linejoin="round"')+
-        path(f"M0 0 L{-32*s} -64 L{18*s} -112",stroke="metalmid",width=21,extra='stroke-linecap="round" stroke-linejoin="round"')+
-        path(f"M{-3*s} -5 L{-36*s} -64 L{14*s} -110",stroke="metalhi",width=3,extra='stroke-linecap="round" stroke-linejoin="round"')+
-        path(f"M{7*s} -4 Q{14*s} -58 {-24*s} -68 Q{-17*s} -105 {16*s} -117",stroke="gold",width=2)+
-        circle(-32*s,-64,17,"url(#brass)","goldlo")+
-        circle(-32*s,-64,10,"deep","metalhi")+
-        circle(-32*s,-64,4,"url(#metal)","edge")+
-        circle(18*s,-112,11,"url(#metal)","deep")+
-        path(f"M{18*s} -116l{24*s} 9l{7*s} 13m{-7*s} -13l{15*s} -2",stroke="metalmid",width=6,extra='stroke-linecap="round"')+
-        circle(18*s,-112,3,"gold","none"),cls=cls),f'translate({cx} {cy})')
-    return parts
-
-
-def machine(lid=True):
-    out='<ellipse cx="475" cy="560" rx="390" ry="58" fill="var(--shadow)" opacity=".13" filter="url(#shadow)"/>'
-    # A pair of finely milled feet, then the lower enclosure.
-    for x,y in [(20,245),(495,245),(495,20)]:
-        out+=box(x,y,-84,28,28,86,"url(#metal)","side","deep")
-    out+=box(0,0,-16,560,300,22,top="url(#porcelain)")
-    out+=box(16,16,6,528,268,8,top="well",side="deep",front="deep",edge="deep")
-    internals=''
-    # Circuit traces connect memory, the reasoning core and the output rail.
-    routes=[[(45,55,16),(185,55,16),(185,142,16),(260,142,16)],
-            [(45,79,16),(162,79,16),(162,174,16),(260,174,16)],
-            [(308,142,16),(405,142,16),(405,45,16),(505,45,16)],
-            [(305,164,16),(452,164,16),(452,235,16),(512,235,16)],
-            [(62,237,16),(216,237,16),(216,198,16),(272,198,16)]]
-    for route in routes:
-        internals+=iso_line(route,"edge",1.4)
-        internals+=iso_line(route,"glow",2.2,'class="flow"')
-    for x in range(46,132,17):
-        internals+=box(x,40,18,9,93,31,"url(#metal)","side","deep")
-    for y in [38,70,102]:
-        internals+=box(430,y,18,78,20,22,"url(#porcelain)")
-        internals+=iso_line([(441,y+7,42),(495,y+7,42)],"gold",2)
-    internals+=box(226,108,18,116,114,18,top="url(#metal)")
-    internals+=disk(284,165,53,50,12,fill="url(#brass)")
-    internals+=disk(284,165,56,40,2,fill="deep")
-    cx,cy=point(284,165,57)
-    ring=''
-    for i in range(32):
-        a=i*2*pi/32
-        ring+=line(cos(a)*40,sin(a)*40,cos(a)*47,sin(a)*47,"gold" if i%4==0 else "edge",1.6)
-    internals+=group(group(ring,cls="rotate"),f'translate({cx} {cy}) scale(1.329 .594)')
-    internals+=disk(284,165,61,18,3,fill="url(#metal)")
-    internals+=arm(110,209,35,cls="arm-a")
-    internals+=arm(440,220,35,mirror=True,cls="arm-b")
-    # A precision shuttle advances only while the enclosure opens.
-    shuttle=box(332,228,24,66,32,16,"url(#brass)","goldlo","goldlo")
-    internals+=group(shuttle,cls="shuttle")
-    for y in [230,272]:
-        internals+=iso_line([(230,y,20),(508,y,20)],"metalmid",3)
-    for x,y in [(25,25),(535,25),(25,275),(535,275)]:
-        internals+=fastener(x,y,19)
-    out+=group(internals,cls="internals")
-    if not lid:
-        return out
-    shell=poly([point(560,0,150),point(560,300,150),point(560,300,6),point(560,0,6)],"side")
-    shell+=poly([point(0,300,150),point(560,300,150),point(560,300,6),point(0,300,6)],"middle")
-    out+=group(shell,cls="shell")
-    # Four registration pins visually explain how the lid fits the base.
-    pins=''
-    for x,y in [(18,18),(542,18),(18,282),(542,282)]:
-        pins+=iso_line([(x,y,12),(x,y,159)],"edge",1,'stroke-dasharray="3 6"')
-    out+=group(pins,cls="internals")
-    lid=box(-5,-5,150,570,310,16,"url(#porcelain)","side","middle")
-    lid+=iso_line([(14,288,166),(544,288,166)],"metalhi",1.1)
-    for x,y in [(13,13),(547,13),(13,287),(547,287)]:
-        lid+=fastener(x,y,167)
-    lid+=disk(280,150,184,57,17,fill="url(#metal)")
-    lid+=disk(280,150,188,49,4,fill="url(#porcelain)")
-    pxc,pyc=point(280,150,189)
-    lid+=f'<ellipse cx="{pxc}" cy="{pyc}" rx="54" ry="24" fill="none" stroke="var(--gold)" stroke-width="1.1"/>'
-    lid+=line(pxc-14,pyc,pxc+14,pyc,"glow",3.3,'stroke-linecap="round" class="pulse"')
-    # Engraved mark and a subtle horizontal sweep on the ceramic surface.
-    ex,ey=point(40,260,168)
-    lid+=group(text(0,0,"invrnt",14,"muted",600),f'translate({ex} {ey}) matrix(.94 .42 -.94 .42 0 0)')
-    out+=group(lid,cls="lid")
-    return out
-
-
 # The surface: GitHub's contribution graph and activity, redrawn at native size.
 # It splits between Wednesday and Thursday and the lower half drops away.
 CUT=32+35+4*13-1.5
@@ -246,20 +123,91 @@ def hero_css(drop):
 .seam{{animation:seam 20s linear infinite}}
 .slab{{animation:slab 20s ease-out infinite;transform-box:fill-box;transform-origin:top}}
 .flick{{animation:flick 20s steps(1) infinite}}
-.arm-a{{animation:arm-a 10s ease-in-out infinite;transform-origin:0 0}}
-.arm-b{{animation:arm-b 10s ease-in-out infinite;transform-origin:0 0}}
-.shuttle{{animation:shuttle 10s ease-in-out infinite}}
 @keyframes upper{{0%,13.9%,17.6%,100%{{transform:translate(0,0)}}14.2%{{transform:translate(-5px,0)}}14.8%{{transform:translate(3px,0)}}15.6%{{transform:translate(-2px,0)}}16.4%{{transform:translate(6px,0)}}17%{{transform:translate(-1px,0)}}}}
 @keyframes lower{{0%,13.9%{{transform:translate(0,0);animation-timing-function:steps(1)}}14.2%{{transform:translate(6px,1px)}}14.8%{{transform:translate(-4px,0)}}15.6%{{transform:translate(3px,2px)}}16.4%{{transform:translate(-6px,1px)}}17%{{transform:translate(0,3px);animation-timing-function:cubic-bezier(.6,0,.2,1)}}27%,84%{{transform:translate(0,{drop}px);animation-timing-function:cubic-bezier(.5,0,.3,1)}}94%,100%{{transform:translate(0,0)}}}}
 @keyframes cavity{{0%,17%,94%,100%{{opacity:0}}26%,84%{{opacity:1}}}}
 @keyframes seam{{0%,13.8%,96%,100%{{opacity:0}}14%,15%{{opacity:1}}15.3%{{opacity:.2}}16%,84%{{opacity:1}}92%{{opacity:.6}}}}
 @keyframes slab{{0%,17%,94%,100%{{transform:scaleY(0)}}21%,90%{{transform:scaleY(1)}}}}
 @keyframes flick{{0%,14%,17%,100%{{opacity:0}}14.5%,15.8%{{opacity:1}}15.2%,16.5%{{opacity:0}}}}
-@keyframes arm-a{{0%,100%{{transform:rotate(0deg)}}40%{{transform:rotate(13deg)}}62%{{transform:rotate(-4deg)}}}}
-@keyframes arm-b{{0%,100%{{transform:rotate(0deg)}}46%{{transform:rotate(-14deg)}}66%{{transform:rotate(4deg)}}}}
-@keyframes shuttle{{0%,12%,88%,100%{{transform:translate(0,0)}}40%,60%{{transform:translate(39px,17px)}}}}
 @media(prefers-reduced-motion:reduce){{.lower{{transform:translate(0,{drop}px)}}.cavity,.seam{{opacity:1}}.slab{{transform:none}}.flick{{opacity:0}}}}
 """
+
+
+def unit_noise(i,j=0):
+    """Deterministic texture, so rebuilds stay byte-identical."""
+    v=sin(i*12.9898+j*78.233)*43758.5453
+    return v-int(v) if v>=0 else v-int(v)+1
+
+
+DIE_CSS="""
+.bus-flow{stroke-dasharray:4 52;animation:bus 2.8s linear infinite}
+.mem{animation:mem 3.6s steps(1) infinite}
+.unit{animation:unit 3.2s ease-in-out infinite}
+@keyframes bus{to{stroke-dashoffset:-56}}
+@keyframes mem{0%,100%{opacity:.18}40%{opacity:1}70%{opacity:.45}}
+@keyframes unit{0%,100%{opacity:.16}50%{opacity:.95}}
+@media(prefers-reduced-motion:reduce){.mem,.unit{opacity:.7}.bus-flow{stroke-dasharray:none;opacity:.5}}
+"""
+
+
+def bus(x1,x2,ys,flow=(),vertical=False):
+    out=path("".join(f"M{y} {x1}V{x2}" if vertical else f"M{x1} {y}H{x2}" for y in ys),stroke="edge",width=1.3)
+    for i,y in enumerate(ys):
+        d=f"M{y} {x1}V{x2}" if vertical else f"M{x1} {y}H{x2}"
+        if i in flow:
+            out+=path(d,stroke="glow",width=2,extra=f'stroke-linecap="round" class="bus-flow" style="animation-delay:{-i*.37:.2f}s"')
+    return out
+
+
+def block(x,y,w,h,name):
+    return rect(x,y,w,h,6,"paper","edge")+label(x+12,y+21,name,size=11)
+
+
+def die():
+    """Beneath the interface: the system, as a die photographed from above. 1072 × 440."""
+    w,h=1072,440
+    out=path("".join(f"M{x} -9h11v12h-11ZM{x} {h-3}h11v12h-11Z" for x in range(56,w-40,26)),"line","none")
+    out+=rect(0,0,w,h,16,"paper","edge")
+    out+=rect(28,28,w-56,h-56,8,"faint","line")
+    for cx,cy in [(40,40),(w-40,40),(40,h-40),(w-40,h-40)]:
+        out+=circle(cx,cy,3,"none","edge")
+    # Signal enters on the left, is understood, remembered, reasoned over, checked, and leaves as one control.
+    out+=bus(28,64,[214,225,236],flow=(1,))
+    out+=bus(194,250,[184,193,202,211],flow=(0,2))
+    out+=bus(194,250,[266,274],flow=(1,))
+    out+=bus(480,536,range(86,196,10),flow=(1,4,8))
+    out+=bus(480,536,range(282,372,10),flow=(2,6))
+    out+=bus(786,842,range(86,196,10),flow=(0,5,9))
+    out+=bus(786,842,range(282,372,10),flow=(3,7))
+    out+=bus(214,262,range(872,980,12),flow=(2,6),vertical=True)
+    out+=bus(1008,w-28,[312,320,328],flow=(1,))
+    out+=block(64,170,130,110,"01 INTENT")
+    for i in range(12):
+        hh=8+22*abs(sin(i*1.7)*sin(i*.45+.3))
+        out+=line(84+i*8,240-hh/2,84+i*8,240+hh/2,"glow",3,'stroke-linecap="round"')
+    out+=block(250,64,230,150,"02 MEMORY")
+    for r in range(5):
+        for c in range(11):
+            v=unit_noise(r,c)
+            cls=f' class="mem" style="animation-delay:{-v*3.6:.2f}s"' if v>.72 else ''
+            out+=f'<rect x="{266+c*18}" y="{94+r*22}" width="13" height="13" rx="2.5" fill="var(--gold)" fill-opacity="{.12+.75*v*v:.2f}"{cls}/>'
+    out+=block(250,262,230,116,"03 TOOLS")
+    for i,name in enumerate(["FILES","WEB","CODE","MAIL"]):
+        out+=rect(266+i*52,292,42,70,4,"faint","line")+label(287+i*52,352,name,anchor="middle",size=8)
+        out+=line(274+i*52,306,300+i*52,306,"gold",1.5)
+    out+=block(536,64,250,314,"04 REASONING")
+    # Compute units light in diagonal waves; one path per diagonal keeps the file small.
+    for d in range(22):
+        cells=''.join(cell_path(553+c*20,94+(d-c)*23,13,2) for c in range(11) if 0<=d-c<12)
+        out+=f'<path class="unit" d="{cells}" fill="var(--glow)" style="animation-delay:{d*.11:.2f}s"/>'
+    out+=block(842,64,166,150,"05 VERIFY")
+    out+=path("M895 149l16 16l34 -38",stroke="glow",width=3,extra='stroke-linecap="round" stroke-linejoin="round"')
+    out+=block(842,262,166,116,"06 OUTPUT")
+    out+=circle(925,328,27,"url(#metal)","edge")+circle(925,328,21,"url(#porcelain)","edge")+circle(925,328,16,"none","gold")
+    out+=line(919,328,931,328,"glow",2.2,'stroke-linecap="round" class="pulse"')
+    out+=label(w-40,h-42,"INVRNT · MDE · 2026",anchor="end",size=9)
+    out+=label(48,h-42,"ONE INTENTION IN · ONE CONTROL OUT",size=9)
+    return out
 
 
 def hero(theme,mobile=False):
@@ -285,22 +233,20 @@ def hero(theme,mobile=False):
     slab+=f'<rect x="0" y="{CUT+7}" width="{width}" height="46" fill="url(#slab-shadow)"/>'
     native=group(group(group(upper,cls="upper")+group(sparks,cls="flick")+group(slab,cls="slab"),"")
                  +group(group(lower+group(seam,cls="seam"),cls="lower")),f"scale({k:.5f})")
-    # Beneath the surface: a quiet drafting grid, the promise, and the machine that keeps it.
+    # Beneath the surface: a quiet drafting grid, the promise, and the system that keeps it.
     top=CUT*k
     floor=(CUT+drop)*k
     m=36 if mobile else 64
-    under=''
     step=40
-    for x in range(step,w,step):
-        under+=line(x,top+14,x,floor,"faint",1)
-    for y in range(int(top)+step,int(floor),step):
-        under+=line(0,y,w,y,"faint",1)
+    grid="".join(f"M{x} {top+14:.0f}V{floor:.0f}" for x in range(step,w,step))
+    grid+="".join(f"M0 {y}H{w}" for y in range(int(top)+step,int(floor),step))
+    under=path(grid,stroke="faint")
     if mobile:
         under+=label(m,top+66,"BENEATH THE SURFACE","glow",size=17)
         under+=text(m,top+152,"More possible.",64,"ink",500,spacing=-3.4)
         under+=text(m,top+228,"Less in the way.",64,"ink",500,spacing=-3.4)
         under+=text(m,top+288,"Powerful systems. Simple experiences.",24,"muted")
-        under+=group(machine(lid=False),f"translate(18 {top+250}) scale(.62)")
+        under+=group(die(),f"translate(36 {top+350}) scale({568/1072:.4f})")
         under+=label(m,floor-36,"JUAN CAMILO GRISALES · MEDELLÍN",size=16)
     else:
         under+=label(m,top+70,"BENEATH THE SURFACE","glow",size=13)
@@ -310,7 +256,7 @@ def hero(theme,mobile=False):
         under+=text(m,top+212,"More possible.",100,"ink",500,spacing=-5)
         under+=text(m,top+324,"Less in the way.",100,"ink",500,spacing=-5)
         under+=text(m,top+382,"Powerful systems. Simple experiences.",27,"muted")
-        under+=group(machine(lid=False),f"translate(250 {top+250}) scale(.9)")
+        under+=group(die(),f"translate(64 {top+440})")
     cavity=f'<g clip-path="url(#cavity)">{group(under,cls="cavity")}</g>'
     defs=(f'<clipPath id="above"><rect width="{width}" height="{CUT}"/></clipPath>'
           f'<clipPath id="below"><rect y="{CUT}" width="{width}" height="{h_px}"/></clipPath>'
@@ -318,8 +264,8 @@ def hero(theme,mobile=False):
           '<linearGradient id="slab-face" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--middle)"/><stop offset="1" stop-color="var(--edge)"/></linearGradient>'
           '<linearGradient id="slab-shadow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--shadow)" stop-opacity=".32"/><stop offset="1" stop-color="var(--shadow)" stop-opacity="0"/></linearGradient>')
     return svg("hero",theme,w,h,"Juan Camilo Grisales. More possible. Less in the way.",
-               f"What looks like GitHub's own contribution graph and activity feed ({DATA['total']:,} contributions in the last year) splits open between Wednesday and Thursday. The lower half drops away. Beneath the surface: More possible. Less in the way. Powerful systems, simple experiences. A precision machine works quietly under the interface. AI engineer and product builder in Medellín, Colombia.",
-               cavity+native,hero_css(drop),native=True,defs=defs)
+               f"What looks like GitHub's own contribution graph and activity feed ({DATA['total']:,} contributions in the last year) splits open between Wednesday and Thursday. The lower half drops away. Beneath the surface: More possible. Less in the way. Powerful systems, simple experiences. Under the interface lies the system itself, drawn like a chip seen from above: intent comes in, memory, tools and a reasoning core work on it, the result is verified, and it leaves as one simple control. AI engineer and product builder in Medellín, Colombia.",
+               cavity+native,hero_css(drop)+DIE_CSS,native=True,defs=defs)
 
 
 def waveform(x,y,width=190,height=24,step=8,cls="voice"):
@@ -455,185 +401,251 @@ def count(theme,mobile=False):
                "An illustrated voice note lends Kevin US$5,000 from a Bancolombia Pod at 12% interest. Count asks whether the rate is effective annual or monthly. Annual is selected. A bank decrease and an equal receivable are recorded; the twelve-month dial represents time-aware accounting. This is a product concept, not a live app.",out,COUNT_CSS+rcss)
 
 
+# Five layers of Count, each shown as the interface it produces. 536 × 100 each.
+LAYER_W,LAYER_H=536,100
+
+
+def layer_intent():
+    # Words are placed one by one: SVG drops trailing spaces, and entities need room for their outline.
+    tokens=[("Lent",0),("Kevin","PERSON"),("US$5,000","AMOUNT"),("from",0),("Bancolombia","POD"),("at",0),("12%","RATE"),("interest.",0)]
+    size=21
+    while True:
+        gap=measure(" ",size,400,MANROPE)+5
+        total=sum(measure(t,size,500 if tag else 400,MANROPE) for t,tag in tokens)+gap*(len(tokens)-1)
+        if total<=LAYER_W-48:
+            break
+        size-=.5
+    x,out,body=24,'',''
+    for value,tag in tokens:
+        weight=500 if tag else 400
+        width=measure(value,size,weight,MANROPE)
+        if tag:
+            out+=rect(round(x-4,1),48,round(width+8,1),29,6,"faint","gold")
+            out+=label(round(x+width/2,1),37,tag,"glow",anchor="middle",size=9)
+        body+=text(round(x,1),68,value,size,"ink",weight)
+        x+=width+gap
+    return out+body
+
+
+def layer_clarify():
+    out=text(22,46,"12% — effective annual,",20,"ink",500)
+    out+=text(22,74,"or monthly?",20,"ink",500)
+    out+=rect(300,30,104,40,20,"faint","gold")+text(342,56,"Annual",18,"glow",500,"middle")
+    out+=path("M379 50l4 4l8 -9",stroke="glow",width=2,extra='stroke-linecap="round" stroke-linejoin="round"')
+    out+=rect(414,30,104,40,20,"paper","line")+text(466,56,"Monthly",18,"muted",400,"middle")
+    return out
+
+
+def layer_ledger():
+    out=label(22,28,"ACCOUNT",size=9)+label(330,28,"AMOUNT",anchor="end",size=9)
+    out+=text(22,57,"Bancolombia · Pod",18,"ink")+text(330,57,"− 5,000.00",18,"ink",500,"end")
+    out+=line(22,68,330,68,"line")
+    out+=text(22,88,"Kevin · receivable",18,"ink")+text(330,88,"+ 5,000.00",18,"ink",500,"end")
+    out+=line(362,20,362,84,"line")
+    out+=text(384,57,"Σ 0.00",22,"ink",500)
+    out+=label(384,83,"BALANCED","glow",size=10)
+    return out
+
+
+def layer_time():
+    out=label(22,28,"12% EFFECTIVE ANNUAL · ACCRUES MONTHLY",size=9)
+    for i,month in enumerate("JFMAMJJASOND"):
+        x=36+i*40
+        height=6+i*3.6
+        out+=rect(x-7,78-height,14,height,3,"gold","none",f'fill-opacity="{.35+.05*i:.2f}"')
+        out+=label(x,94,month,anchor="middle",size=9)
+    out+=line(22,80,LAYER_W-22,80,"line")
+    return out
+
+
+def layer_result():
+    out=circle(46,50,20,"faint","gold")
+    out+=path("M37 50l7 7l13 -14",stroke="glow",width=2.4,extra='stroke-linecap="round" stroke-linejoin="round"')
+    out+=text(80,46,"Recorded.",22,"ink",500)
+    out+=text(80,74,"Kevin owes US$5,000 at 12% E.A.",17,"muted")
+    out+=label(LAYER_W-22,48,"INSPECT ↗","glow",anchor="end",size=10)
+    return out
+
+
+ARCH_CSS="""
+.lit{opacity:0;animation:lit 12.5s ease-in-out infinite}
+.beam{stroke-dasharray:40 900;animation:beam 12.5s linear infinite}
+@keyframes lit{0%,100%{opacity:0}4%,16%{opacity:1}22%{opacity:0}}
+@keyframes beam{from{stroke-dashoffset:40}to{stroke-dashoffset:-860}}
+@media(prefers-reduced-motion:reduce){.lit{opacity:0}.beam{stroke-dasharray:none;opacity:.35}}
+"""
+
+
 def architecture(theme,mobile=False):
-    w,h=(640,1100) if mobile else (1200,860)
+    w,h=(640,1310) if mobile else (1200,860)
     m=36 if mobile else 64
     out=line(rail_x(mobile)+7,46,m-12,46,"gold",1.2)+node(rail_x(mobile),46)
     out+=label(m,51,"INSIDE COUNT",size=17 if mobile else 14)
     out+=text(m,117,"Simple is engineered.",44 if mobile else 53,"ink",500,spacing=-2)
-    # A vertical stack acts as a legible, physical architecture diagram.
-    plates=''
-    captions=[("01","INTENT","Voice · text · receipts"),("02","CLARIFICATION","Ask only what is missing"),
-              ("03","LEDGER","Pods · exact, balanced entries"),("04","TIME","Accruals · scheduled work"),
-              ("05","RESULT","A clear answer. An inspectable record.")]
-    for i,(n,title,description) in enumerate(captions):
-        yy=210+i*(174 if mobile else 127)
-        # Same micro-controller shape becomes five transparent layers.
-        xx=40 if mobile else 685
-        plate=box(0,0,0,185,98,12,"url(#porcelain)")
-        for x,y in [(18,18),(166,18),(18,80),(166,80)]:
-            plate+=fastener(x,y,14)
-        plate+=disk(93,49,18,21,6,fill="url(#brass)" if i==2 else "url(#metal)")
-        plate+=iso_line([(28,49,14),(65,49,14)],"gold",2)
-        plate+=iso_line([(120,49,14),(159,49,14)],"gold",2)
-        plate=group(plate,"translate(-290 -168)")
-        plates+=group(plate,f"translate({xx} {yy})"+(" scale(.68)" if mobile else ""))
-        plates+=circle(231 if mobile else 630,yy+12,4,"gold","none",extra=f'class="pulse" style="animation-delay:{-i}s"')
+    # One real sentence passes through every layer; each layer is shown as what it produces.
+    captions=[("01","INTENT","Voice · text · receipts",layer_intent),("02","CLARIFICATION","Ask only what is missing",layer_clarify),
+              ("03","LEDGER","Pods · exact, balanced entries",layer_ledger),("04","TIME","Accruals · scheduled work",layer_time),
+              ("05","RESULT","A clear answer. An inspectable record.",layer_result)]
+    scale=568/LAYER_W if mobile else 1
+    cards=''
+    for i,(n,title,description,draw) in enumerate(captions):
         if mobile:
-            out+=label(268,yy+11,n+" / "+title,"ink",size=18)
-            words=description.split(". ") if i==4 else description.split(" · ")
-            for j,s in enumerate(words):
-                out+=text(268,yy+47+j*31,s,23,"muted")
+            yy=200+i*218
+            cx,cy=m,yy+58
+            out+=label(m,yy,n+" / "+title,"ink",size=18)
+            out+=text(m,yy+36,description,23,"muted")
         else:
+            yy=210+i*127
+            cx,cy=600,yy-34
             out+=label(m,yy,n+" / "+title,"ink",size=15)
             out+=text(m,yy+39,description,25,"muted")
-            out+=line(460,yy+12,640,yy+12,"line",1)
-    out+=plates
+            out+=line(470,yy+12,cx-14,yy+12,"line",1)+circle(cx-14,yy+12,3,"gold","none")
+        card=rect(0,0,LAYER_W,LAYER_H,14,"paper","line")+draw()
+        card+=rect(0,0,LAYER_W,LAYER_H,14,"none","gold",f'stroke-width="1.6" class="lit" style="animation-delay:{i*2.5}s"')
+        cards+=group(card,f"translate({cx} {cy})"+(f" scale({scale:.4f})" if mobile else ""))
     if not mobile:
-        out+=path("M935 254v516",stroke="line",width=1)
-        out+=path("M935 254v516",stroke="glow",width=2,extra='stroke-dasharray="8 100" class="flow"')
+        out+=path("M580 186V752",stroke="line")
+        out+=path("M580 186V752",stroke="glow",width=2,extra='class="beam"')
+    out+=cards
     r,rcss=rail(h,mobile,socket_bottom=True)
-    out=r+out
     return svg("architecture",theme,w,h,"Inside Count. Simple is engineered.",
-               "Five layers of the planned system: understand intent from voice, text and receipts; ask about missing context; record exact balanced entries in account-specific Pods; account for time; return a clear result with inspectable records.",out,rcss)
+               "One sentence passes through the five layers of the planned system. Intent: Kevin, US$5,000, Bancolombia and 12% are recognised as person, amount, Pod and rate. Clarification: effective annual or monthly? Annual. Ledger: Bancolombia Pod minus 5,000.00, Kevin receivable plus 5,000.00, balanced at zero. Time: interest accrues monthly at 12% effective annual. Result: recorded, with the record open to inspection.",
+               r+out,ARCH_CSS+rcss)
 
 
 PRODUCT_CSS='''
-.sheet-a{animation:sheet-a 12s cubic-bezier(.4,0,.2,1) infinite}
-.sheet-b{animation:sheet-b 12s cubic-bezier(.4,0,.2,1) infinite}
-.write-line{stroke-dasharray:200;stroke-dashoffset:200;animation:write 12s ease-in-out infinite}
-.scan-line{animation:scan 12s ease-in-out infinite}
-.file-a{animation:file-a 12s cubic-bezier(.4,0,.2,1) infinite}
-.file-b{animation:file-b 12s cubic-bezier(.4,0,.2,1) infinite}
 .voice{animation:voice 3s ease-in-out infinite}
-@keyframes sheet-a{0%,100%{transform:translateY(-8px)}40%,70%{transform:translateY(6px)}}
-@keyframes sheet-b{0%,100%{transform:translateY(6px)}40%,70%{transform:translateY(-8px)}}
-@keyframes write{0%,18%,100%{stroke-dashoffset:200}48%,88%{stroke-dashoffset:0}}
-@keyframes scan{0%,12%,92%,100%{transform:translateY(0);opacity:0}20%{opacity:1}80%{transform:translateY(136px);opacity:1}}
-@keyframes file-a{0%,12%,96%,100%{transform:translateY(-26px)}42%,78%{transform:translateY(0)}}
-@keyframes file-b{0%,22%,96%,100%{transform:translateY(-35px)}52%,83%{transform:translateY(0)}}
+.talk{opacity:0;animation:talk 12s ease-out infinite}
+.write{stroke-dasharray:1 1;stroke-dashoffset:1;animation:write 12s ease-in-out infinite}
+.cite{opacity:0;animation:cite 12s ease-in-out infinite}
+.link{stroke-dasharray:1 1;stroke-dashoffset:1;animation:link 12s ease-in-out infinite}
+.seal{stroke-dasharray:1 1;stroke-dashoffset:1;animation:seal 12s ease-in-out infinite}
 @keyframes voice{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1)}}
-@media(prefers-reduced-motion:reduce){.write-line{stroke-dashoffset:0}.scan-line{opacity:0}}
+@keyframes talk{0%{opacity:0;transform:translateY(10px)}5%,90%{opacity:1;transform:translateY(0)}97%,100%{opacity:0}}
+@keyframes write{0%,6%{stroke-dashoffset:1}18%,90%{stroke-dashoffset:0}97%,100%{stroke-dashoffset:1}}
+@keyframes cite{0%,40%{opacity:0}46%,90%{opacity:1}97%,100%{opacity:0}}
+@keyframes link{0%,44%{stroke-dashoffset:1}58%,90%{stroke-dashoffset:0}97%,100%{stroke-dashoffset:1}}
+@keyframes seal{0%,74%{stroke-dashoffset:1}80%,92%{stroke-dashoffset:0}97%,100%{stroke-dashoffset:1}}
+@media(prefers-reduced-motion:reduce){.write,.link,.seal{stroke-dashoffset:0}.talk,.cite{opacity:1}}
 '''
 
 
-def sheet(x,y,w,h,kind="document",cls=""):
-    out=rect(0,0,w,h,9,"url(#porcelain)","edge")
-    out+=line(10,h+4,w-4,h+4,"line",1)
+def write(x1,y,x2,delay,color="muted",width=2.6):
+    return path(f"M{x1} {y}H{x2}",stroke=color,width=width,
+                extra=f'pathLength="1" stroke-linecap="round" class="write" style="animation-delay:{delay:.2f}s"')
+
+
+def source_card(y,title,tag,kind):
+    out=rect(0,y,210,112,12,"paper","line")
+    out+=text(18,y+32,title,17,"ink",500)+label(18,y+53,tag,size=9)
     if kind=="audio":
-        out+=circle(27,28,10,"none","gold",1)
-        out+=line(24,22,24,34,"gold",2)+line(29,22,29,34,"gold",2)
-        out+=waveform(23,76,w-42,38,7)
-        out+=line(22,h-31,w-22,h-31,"line",1.2)
-        out+=circle(45,h-31,3,"gold","none")
+        out+=waveform(20,y+84,170,22,8)
+    elif kind=="pdf":
+        for i,frac in enumerate([1,.82,.94]):
+            out+=line(18,y+74+i*12,18+150*frac,y+74+i*12,"line",2.4,'stroke-linecap="round"')
     else:
-        out+=rect(20,20,25,5,2,"gold","none")
-        for i,frac in enumerate([.78,1,.91,.62]):
-            out+=line(20,51+i*15,20+(w-40)*frac,51+i*15,"muted",1.7)
-        if kind=="result":
-            out+=rect(20,120,w-40,43,5,"faint","line")
-            out+=line(30,134,w-34,134,"gold",2,extra='class="write-line"')
-            out+=line(30,149,w-64,149,"gold",2,extra='class="write-line" style="animation-delay:.35s"')
-            for i in range(3):
-                out+=circle(25+i*20,h-24,4,"none","gold")
-    return group(group(out,cls=cls),f"translate({x} {y})")
+        out+=rect(18,y+66,82,34,4,"faint","line")+line(26,y+76,70,y+76,"gold",2)+line(26,y+87,88,y+87,"line",2)
+        out+=rect(110,y+66,82,34,4,"faint","line")+line(118,y+76,160,y+76,"gold",2)+line(118,y+87,180,y+87,"line",2)
+    return out
 
 
 def classmate_art():
-    out='<ellipse cx="321" cy="401" rx="206" ry="30" fill="var(--shadow)" opacity=".1" filter="url(#shadow)"/>'
-    # An open book, with a real shared spine. Materials flow toward one source-aware result.
-    out+=path("M98 297Q195 259 310 305Q419 259 520 297L506 377Q406 346 310 392Q213 346 111 377Z","url(#porcelain)","edge")
-    out+=path("M98 286Q195 248 310 294Q419 248 520 286L506 364Q406 333 310 379Q213 333 111 364Z","url(#porcelain)","edge")
-    out+=path("M100 280Q201 240 310 287Q418 240 518 280L504 355Q409 326 310 371Q211 326 113 355Z","paper","edge")
-    out+=path("M310 287v84",stroke="gold",width=1.4)
-    for i in range(4):
-        yy=286+i*15
-        out+=path(f"M137 {yy}Q211 {yy-19} 282 {yy+8}",stroke="line",width=1.2)
-        out+=path(f"M338 {yy+8}Q411 {yy-19} 484 {yy}",stroke="line",width=1.2)
-    out+=path("M148 192C140 247 190 232 252 271M473 177C505 234 434 227 385 265",stroke="line",width=1.2)
-    out+=path("M148 192C140 247 190 232 252 271M473 177C505 234 434 227 385 265",stroke="glow",width=2,extra='class="flow"')
-    out+=sheet(52,36,157,161,"audio","sheet-a")
-    out+=sheet(413,27,141,151,"document","sheet-b")
-    out+=sheet(226,66,171,223,"result")
-    out+=label(312,327,"CONTEXT",anchor="middle",size=12)
+    # Three kinds of material, one answer that cites each of them back to its source.
+    out=source_card(16,"Lecture 07","AUDIO · 48 MIN","audio")
+    out+=source_card(150,"Syllabus.pdf","PDF · 12 PAGES","pdf")
+    out+=source_card(284,"Week 7 slides","SLIDES · 34","slides")
+    out+=rect(258,0,362,410,16,"paper","line")
+    out+=label(282,34,"ASK YOUR COURSE",size=10)
+    out+=rect(282,52,314,46,23,"faint","line")+text(302,81,"What will the midterm cover?",17,"ink",500)
+    # Citations sit in the card's left gutter, so each link crosses only the gap to its source.
+    lines=[(140,560,None),(166,520,2),(192,580,None),(218,470,1),(244,550,None),(270,500,3)]
+    for i,(y,end,cite) in enumerate(lines):
+        out+=write(314,y,end,i*.35)
+        if cite:
+            out+=group(rect(276,y-10,24,20,6,"faint","gold")+label(288,y+4,str(cite),"glow",anchor="middle",size=10),
+                       cls="cite",extra=f'style="animation-delay:{i*.35:.2f}s"')
+            target=[None,72,206,340][cite]
+            out+=path(f"M276 {y}C244 {y} 244 {target} 212 {target}",stroke="glow",width=1.6,
+                      extra=f'pathLength="1" class="link" style="animation-delay:{i*.35:.2f}s"')
+            out+=circle(212,target,3,"glow","none",extra=f'class="cite" style="animation-delay:{i*.35+.6:.2f}s"')
+    out+=line(282,330,596,330,"line")
+    out+=label(282,362,"3 SOURCES · ONE CONTEXT",size=10)
+    for i in range(3):
+        out+=circle(560+i*14,358,3.5,"gold" if i==0 else "none","gold")
     return out
 
 
-def chair(x,y,mirror=False):
-    # Bent-metal frame, upholstered back and seat. Human space is kept still.
-    sign=-1 if mirror else 1
-    out=path("M-46 52L-39 143M34 52L43 143",stroke="metalmid",width=5,extra='stroke-linecap="round"')
-    out+=path("M-46 50V-45Q-46 -60 -32 -60H24Q38 -60 38 -46V50",stroke="metalmid",width=6,extra='stroke-linejoin="round"')
-    out+=rect(-50,-67,91,93,15,"url(#porcelain)","edge")
-    out+=path("M-46 42Q-10 31 49 44L58 57Q-2 69 -49 57Z","url(#porcelain)","edge")
-    out+=line(-48,59,56,58,"metalhi",1.1)
-    return group(out,f"translate({x} {y}) skewY({-8*sign})")
+def bubble(x,y,w,h,who,bars,counselor,delay):
+    out=rect(x,y,w,h,16,"faint" if counselor else "paper","gold" if counselor else "line")
+    out+=label(x+18,y+26,who,"glow" if counselor else "muted",size=9)
+    for i,frac in enumerate(bars):
+        out+=line(x+18,y+46+i*14,x+18+(w-36)*frac,y+46+i*14,"line" if not counselor else "gold",3,'stroke-linecap="round"')
+    return group(out,cls="talk",extra=f'style="animation-delay:{delay:.2f}s;transform-box:fill-box"')
 
 
 def orientador_art():
-    out='<ellipse cx="230" cy="407" rx="203" ry="28" fill="var(--shadow)" opacity=".1" filter="url(#shadow)"/>'
-    out+=chair(101,251)+chair(338,251,True)
-    # A conversation remains central while documentation assembles to the side.
-    out+=path("M142 216Q218 158 292 216",stroke="line",width=1.2)
-    out+=waveform(178,183,70,29,7)
-    out+=path("M248 183C361 90 360 77 422 106",stroke="line",width=1.1)
-    out+=path("M248 183C361 90 360 77 422 106",stroke="glow",width=2,extra='class="flow"')
-    report=rect(0,0,150,208,10,"url(#porcelain)","edge")
-    report+=label(22,31,"SESSION",size=11)
-    report+=line(22,55,121,55,"line",1.5)
-    for i,length in enumerate([103,88,103,72,97]):
-        report+=line(22,77+i*18,22+length,77+i*18,"muted",1.6,extra=f'class="write-line" style="animation-delay:{i*.25}s"')
-    report+=rect(22,170,105,23,5,"faint","gold")
-    report+=text(75,186,"FOR REVIEW",10,"glow",500,"middle",1.1)
-    out+=group(report,"translate(422 30)")
+    # The conversation stays abstract: the point is to listen, not to read. The note assembles beside it.
+    out=bubble(0,10,236,78,"STUDENT",[1,.7],False,0)
+    out+=bubble(64,104,236,64,"COUNSELOR",[.8],True,.9)
+    out+=bubble(0,184,236,92,"STUDENT",[1,.9,.55],False,1.8)
+    out+=bubble(64,292,236,64,"COUNSELOR",[.6],True,2.7)
+    out+=circle(8,392,4,"glow","none",extra='class="pulse"')+waveform(26,392,90,16,6)
+    out+=label(128,397,"LISTENING",size=10)
+    out+=rect(330,0,290,410,16,"paper","line")
+    out+=text(354,44,"Session note",20,"ink",500)
+    out+=rect(354,60,172,24,12,"faint","gold")+label(440,76,"DRAFT · FOR REVIEW","glow",anchor="middle",size=9)
+    fields=[("REASON FOR VISIT",120,[.9,.6]),("OBSERVATIONS",192,[1,.85,.7]),("AGREEMENTS",278,[.95,.5])]
+    delay=1.2
+    for name,y,bars in fields:
+        out+=label(354,y,name,size=9)
+        for i,frac in enumerate(bars):
+            out+=write(354,y+22+i*16,354+236*frac,delay,width=2.4)
+            delay+=.45
+    out+=rect(354,356,20,20,5,"none","gold")
+    out+=path("M358 366l4 4l8 -9",stroke="glow",width=2.2,extra='pathLength="1" class="seal" stroke-linecap="round" stroke-linejoin="round"')
+    out+=text(384,372,"Reviewed by the counselor",15,"muted")
+    out+=path("M300 230C318 230 312 206 328 206",stroke="gold",width=1.4,extra='stroke-dasharray="2 4"')
     return out
 
 
-def bento_art():
-    out='<ellipse cx="315" cy="406" rx="231" ry="33" fill="var(--shadow)" opacity=".1" filter="url(#shadow)"/>'
-    # Files descend into a local enclosure with visible, orderly compartments.
-    out+=group(box(0,0,0,300,183,19,"url(#porcelain)"),"translate(-16 70)")
-    out+=group(box(10,12,20,279,158,13,"well","side","deep"),"translate(-16 70)")
-    for x,y in [(36,35),(134,35),(222,35),(36,114),(134,114),(222,114)]:
-        out+=group(box(x,y,36,58,38,18,"url(#metal)"),"translate(-16 70)")
-    tile=rect(0,0,130,150,12,"url(#porcelain)","edge")
-    tile+=rect(13,14,104,77,6,"faint","line")
-    tile+=circle(88,36,11,"url(#brass)","none")
-    tile+=path("M18 78L42 47L68 72L83 58L110 82Z","metalmid","none")
-    tile+=line(19,113,108,113,"muted",2)+line(19,127,73,127,"line",2)
-    out+=group(group(tile,cls="file-a"),"translate(147 111) rotate(-8)")
-    out+=sheet(283,66,142,178,"document","file-b")
-    # Near wall occludes the lower part of the files, so they really enter the box.
-    near=poly([point(0,183,110),point(300,183,110),point(300,183,19),point(0,183,19)],"url(#porcelain)")
-    near+=poly([point(300,0,110),point(300,183,110),point(300,183,19),point(300,0,19)],"side")
-    out+=group(near,"translate(-16 70)")
-    cx,cy=point(150,184,71)
-    out+=group(label(0,0,"LOCAL",size=13),f"translate({cx-16} {cy+70}) matrix(.94 .42 0 1 0 0)")
-    out+=circle(504,314,4,"gold","none",extra='class="pulse"')
-    return out
+# Bento's own window: where the rows from GitHub's table come to rest, each in its own tile.
+WINDOW_W,WINDOW_H=576,292
+TILE_W,TILE_H,TILE_GAP=164,86,16
 
 
-def local_box(filled=True):
-    # The same enclosure as before, without the floating files: rows from the list land here.
-    out='<ellipse cx="315" cy="406" rx="231" ry="33" fill="var(--shadow)" opacity=".1" filter="url(#shadow)"/>'
-    out+=group(box(0,0,0,300,183,19,"url(#porcelain)"),"translate(-16 70)")
-    out+=group(box(10,12,20,279,158,13,"well","side","deep"),"translate(-16 70)")
-    for i,(x,y) in enumerate([(36,35),(134,35),(222,35),(36,114),(134,114),(222,114)]):
-        out+=group(group(box(x,y,36,58,38,18,"url(#metal)"),cls="settle",extra=f'style="animation-delay:{i*.42:.2f}s"'),"translate(-16 70)")
-    near=poly([point(0,183,60),point(300,183,60),point(300,183,19),point(0,183,19)],"url(#porcelain)")
-    near+=poly([point(300,0,60),point(300,183,60),point(300,183,19),point(300,0,19)],"side")
-    out+=group(near,"translate(-16 70)")
-    cx,cy=point(150,184,40)
-    out+=group(label(0,0,"LOCAL",size=13),f"translate({cx-16} {cy+70}) matrix(.94 .42 0 1 0 0)")
+def tile_centre(i):
+    return 22+(i%3)*(TILE_W+TILE_GAP)+TILE_W/2,64+(i//3)*(TILE_H+TILE_GAP)+TILE_H/2
+
+
+def bento_window(names,delays):
+    out=f'<ellipse cx="{WINDOW_W/2}" cy="{WINDOW_H+14}" rx="{WINDOW_W/2-40}" ry="12" fill="var(--shadow)" opacity=".12" filter="url(#shadow)"/>'
+    out+=rect(0,0,WINDOW_W,WINDOW_H,16,"paper","line")
+    for i in range(3):
+        out+=circle(24+i*18,24,5,"faint","line")
+    out+=text(90,30,"Bento",17,"ink",500)
+    out+=rect(WINDOW_W-176,11,156,26,13,"faint","gold")
+    out+=path(f"M{WINDOW_W-160} 23v-3a4 4 0 0 1 8 0v3",stroke="glow",width=1.4)+rect(WINDOW_W-162,22,12,9,2,"glow","none")
+    out+=label(WINDOW_W-142,29,"ON THIS DEVICE","glow",size=9)
+    out+=line(0,46,WINDOW_W,46,"line")
+    for i,(name,delay) in enumerate(zip(names,delays)):
+        cx,cy=tile_centre(i)
+        x,y=cx-TILE_W/2,cy-TILE_H/2
+        tile=rect(x,y,TILE_W,TILE_H,10,"faint","line")
+        tile+=path(f"M{x+16} {y+22}h12l4 4h16v18h-32Z","gold","none")
+        tile+=text(x+16,y+68,name,15,"ink",500)
+        out+=group(tile,cls="settle",extra=f'style="animation-delay:{delay:.2f}s"')
+    out+=label(22,WINDOW_H-18,"0 BYTES UPLOADED · YOUR FILES STAY HERE",size=9)
     return out
 
 
 BENTO_CSS="""
 .peel{animation:peel 12s cubic-bezier(.55,0,.35,1) infinite;transform-box:fill-box;transform-origin:center}
 .settle{animation:settle 12s ease-out infinite}
+.empty{opacity:0;animation:empty 12s ease-in-out infinite}
 @keyframes peel{0%,10%{transform:translate(0,0) scale(1);opacity:1}24%{opacity:.85}30%,80%{transform:translate(var(--dx),var(--dy)) scale(.12);opacity:0}80.1%{transform:translate(0,0) scale(1);opacity:0}92%,100%{transform:translate(0,0) scale(1);opacity:1}}
-@keyframes settle{0%,24%,94%,100%{opacity:.25}34%,86%{opacity:1}}
-@media(prefers-reduced-motion:reduce){.peel{transform:none;opacity:1}.settle{opacity:1}}
+@keyframes settle{0%,27%,94%,100%{opacity:.22}31%,86%{opacity:1}}
+@keyframes empty{0%,44%,80%,100%{opacity:0}50%,76%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.peel{transform:none;opacity:1}.settle{opacity:1}.empty{opacity:0}}
 """
 
 
@@ -646,38 +658,41 @@ def bento(theme,mobile=False):
     for i,value in enumerate(["A local-first home","for your files."]):
         out+=text(m,(209 if mobile else 255)+i*37,value,29 if mobile else 26,"muted")
     out+=label(m,296 if mobile else 368,"VIEW THE SOURCE ↗","glow",size=17 if mobile else 13)
-    # GitHub's own file table, then the files leave it for a box on your desk.
+    # GitHub's own file table, then the files leave it for Bento, on your own device.
     k=w/(308 if mobile else 846)
     list_x,list_y=(m,340) if mobile else (560,96)
     list_w=round((w-m-list_x)/k)
-    rows=6 if mobile else 7
-    # The enclosure spans local y 195-440 and its opening is centred near (418, 324).
-    bx,by,bs=(320-418*1.05,975-195*1.05,1.05) if mobile else (870-418*.92,590-195*.92,.92)
-    box_place=f"translate({bx:.0f} {by:.0f}) scale({bs})"
-    landing=(bx+418*bs,by+324*bs)
+    rows=6
+    wx,wy=(m,950) if mobile else (560,530)
+    ws=(w-m-wx)/WINDOW_W
     frame,body=file_list(n,list_w,rows)
+    names=[name for name,kind in sorted(DATA["bento"]["entries"],key=lambda e:(e[1]!="tree",e[0].lower()))[:rows]]
+    # The bottom row leaves first, so every row falls through space that is already clear.
+    delays=[(len(body)-1-i)*.3 for i in range(len(body))]
     peeled=""
     for i,row in enumerate(body):
-        cy=49+i*37+18
-        dx=(landing[0]-list_x)/k-list_w/2
-        dy=(landing[1]-list_y)/k-cy
-        # The bottom row leaves first, so every row falls through space that is already clear.
-        peeled+=f'<g class="peel" style="--dx:{dx:.0f}px;--dy:{dy:.0f}px;animation-delay:{(len(body)-1-i)*.3:.2f}s">{row}</g>'
-    out+=group(local_box(),box_place)
+        tx,ty=tile_centre(i)
+        dx=(wx+tx*ws-list_x)/k-list_w/2
+        dy=(wy+ty*ws-list_y)/k-(49+i*37+18)
+        peeled+=f'<g class="peel" style="--dx:{dx:.0f}px;--dy:{dy:.0f}px;animation-delay:{delays[i]:.2f}s">{row}</g>'
+    out+=group(bento_window(names,delays),f"translate({wx} {wy})"+(f" scale({ws:.4f})" if ws!=1 else ""))
+    # While the rows are away, the table says where they went, in GitHub's own voice.
+    mid=49+rows*37/2
+    empty=(t_native(list_w/2,mid-4,"Nothing to see here.",16,n["fg"],600,"middle")
+           +t_native(list_w/2,mid+20,fit("These files live in Bento, on your device.",14,list_w-32),14,n["muted"],anchor="middle"))
+    peeled+=group(empty,cls="empty")
     out+=group(frame+peeled,f"translate({list_x} {list_y}) scale({k:.5f})")
     r,rcss=rail(h,mobile)
     return svg("bento",theme,w,h,"Bento. Yours to keep.",
-               "Bento. A local-first home for your files. What looks like GitHub's own file list for the Bento repository comes apart: each row lifts away and settles into a porcelain enclosure labelled Local. Your files remain on your own device by default.",
+               "Bento. A local-first home for your files. What looks like GitHub's own file list for the Bento repository comes apart: each row lifts away and comes to rest in its own tile inside the Bento window, on this device. Nothing is uploaded. Your files remain on your own device by default.",
                r+out,BENTO_CSS+rcss,native=True)
 
 
 PRODUCTS={
     "classmate":("02","CLASSMATE STUDIO","Room to think.",["Course materials, recordings and AI.","One shared context."],classmate_art,
-                 "Classmate Studio. Course materials, recordings and AI in one academic workspace. A voice recording and document join a shared, source-aware context, illustrated as an open book."),
+                 "Classmate Studio. Course materials, recordings and AI in one academic workspace. A lecture recording, the syllabus and the week's slides sit beside one answer. As the answer is written, each claim is cited back to the source it came from."),
     "orientador":("03","ORIENTADOR","Time to listen.",["AI-assisted documentation", "for school counselors."],orientador_art,
-                  "Orientador. AI-assisted documentation for school counselors. Two chairs face each other while a session document assembles to the side, ready for professional review."),
-    "bento":("04","BENTO","Yours to keep.",["A local-first home", "for your files."],bento_art,
-             "Bento. A local-first home for your files. Photos and documents settle into an organized local enclosure. Your files remain on your own device by default."),
+                  "Orientador. AI-assisted documentation for school counselors. The conversation between a student and a counselor is shown only as its rhythm, never its words. Beside it a session note assembles, marked as a draft for professional review, and the counselor signs it off."),
 }
 
 
@@ -689,86 +704,55 @@ def product(name,theme,mobile=False):
     out+=text(m,149 if mobile else 197,headline,55 if mobile else 57,"ink",500,spacing=-2.7)
     for i,value in enumerate(body):
         out+=text(m,(209 if mobile else 255)+i*37,value,29 if mobile else 26,"muted")
-    cta={"classmate":"EXPLORE CLASSMATE ↗","orientador":"EXPLORE ORIENTADOR ↗","bento":"VIEW THE SOURCE ↗"}[name]
+    cta={"classmate":"EXPLORE CLASSMATE ↗","orientador":"EXPLORE ORIENTADOR ↗"}[name]
     out+=label(m,296 if mobile else 368,cta,"glow",size=17 if mobile else 13)
-    placement=("translate(22 350) scale(.85)" if mobile else "translate(558 110) scale(.88)") if name=="bento" else ("translate(25 305) scale(.96)" if mobile else "translate(558 101) scale(.99)")
+    placement="translate(25 305) scale(.96)" if mobile else "translate(558 101) scale(.99)"
     out+=group(draw(),placement)
     r,rcss=rail(h,mobile,socket_top=name=="classmate")
     return svg(name,theme,w,h,title+". "+headline,desc,r+out,PRODUCT_CSS+rcss)
 
 
-AMBITION_CSS='''
-.build-one{animation:build-one 24s cubic-bezier(.4,0,.2,1) infinite}
-.build-two{animation:build-two 24s cubic-bezier(.4,0,.2,1) infinite}
-.build-three{animation:build-three 24s cubic-bezier(.4,0,.2,1) infinite}
-.research{animation:research 8s ease-in-out infinite}
-.work-arm{animation:work-arm 8s ease-in-out infinite;transform-origin:0 0}
-.growth{animation:growth 24s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom}
-@keyframes build-one{0%,100%{opacity:.7;transform:translateY(12px)}12%,92%{opacity:1;transform:translateY(0)}}
-@keyframes build-two{0%,12%,100%{opacity:.55;transform:translateY(18px)}28%,92%{opacity:1;transform:translateY(0)}}
-@keyframes build-three{0%,28%,100%{opacity:.4;transform:translateY(22px)}45%,92%{opacity:1;transform:translateY(0)}}
-@keyframes research{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
-@keyframes work-arm{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(18deg)}}
-@keyframes growth{0%,30%,100%{transform:scaleY(.35);opacity:.3}62%,92%{transform:scaleY(1);opacity:1}}
-@media(prefers-reduced-motion:reduce){.build-one,.build-two,.build-three,.growth{opacity:1;transform:none}}
-'''
+# A contribution graph for every industry: seven rows, like the seven days of the week.
+INDUSTRIES=["HEALTH","ENERGY","MATERIALS","FOOD","EDUCATION","HOUSING","SCIENCE"]
+ABUNDANCE={"dark":["#17211d","#3f3321","#6e5530","#c69b54","#f0c985"],
+           "light":["#eef1ee","#f1dfb8","#ddbb7c","#b9873f","#7d5a2b"]}
+
+AMBITION_CSS="""
+.bloom{opacity:0;animation:bloom 24s ease-out infinite}
+.cost{stroke-dasharray:1 1;stroke-dashoffset:1;animation:cost 24s ease-in-out infinite}
+@keyframes bloom{0%,3%{opacity:0}8%,86%{opacity:1}94%,100%{opacity:0}}
+@keyframes cost{0%,4%{stroke-dashoffset:1}48%,88%{stroke-dashoffset:0}95%,100%{stroke-dashoffset:1}}
+@media(prefers-reduced-motion:reduce){.bloom{opacity:1}.cost{stroke-dashoffset:0}}
+"""
 
 
-def workshop():
-    out=box(0,0,0,190,150,16,"url(#porcelain)")
-    out+=box(13,12,17,162,120,6,"well","side","deep")
-    out+=iso_line([(34,30,26),(150,30,26),(150,120,26)],"gold",1.6)
-    out+=arm(62,92,34,cls="work-arm")
-    out+=box(118,37,25,38,42,27,"url(#brass)","goldlo","goldlo")
-    out+=disk(139,58,55,12,3,"url(#metal)")
-    for yy in [35,51,67,83]:
-        out+=iso_line([(16,yy,24),(37,yy,24)],"edge",2)
-    return group(out,"translate(-239 -103)")
+def cell_path(x,y,size,radius):
+    r=radius
+    return f"M{x+r:.1f} {y:.1f}h{size-2*r}a{r} {r} 0 0 1 {r} {r}v{size-2*r}a{r} {r} 0 0 1 -{r} {r}h-{size-2*r}a{r} {r} 0 0 1 -{r} -{r}v-{size-2*r}a{r} {r} 0 0 1 {r} -{r}"
 
 
-def laboratory():
-    out=box(0,0,0,190,150,16,"url(#porcelain)")
-    out+=box(24,25,16,140,100,21,"url(#porcelain)")
-    cx,cy=point(88,83,40)
-    instrument=disk(88,83,46,40,8,"url(#metal)")
-    # A microscope's load-bearing arm, optical tube, stage and focus adjustment.
-    body=path("M-32 0Q-54 -74 -26 -127L-7 -135",stroke="deep",width=22,extra='stroke-linecap="round"')
-    body+=path("M-32 0Q-54 -74 -26 -127L-7 -135",stroke="metalmid",width=16,extra='stroke-linecap="round"')
-    body+=path("M-35 -3Q-56 -75 -28 -127",stroke="metalhi",width=2.2)
-    body+=group(rect(-10,-148,28,76,5,"url(#metal)","edge")+rect(-6,-160,20,15,3,"deep","edge")+
-                rect(-5,-71,18,22,2,"url(#brass)","goldlo"),cls="research")
-    body+=path("M-28 -33L30 -46L55 -32L-5 -17Z","deep","edge")
-    body+=path("M-13 -33L15 -39L32 -30L4 -24Z","url(#glass)","gold")
-    body+=circle(-36,-59,15,"url(#brass)","goldlo")+circle(-36,-59,6,"url(#metal)","edge")
-    body+=path("M8 -64L8 -34",stroke="glow",width=2,extra='class="pulse"')
-    instrument+=group(body,f"translate({cx} {cy})")
-    out+=instrument
-    for x in [140,159]:
-        out+=disk(x,111,48,6,27,"url(#glass)")
-    return group(out,"translate(-239 -103)")
-
-
-def greenhouse():
-    out=box(0,0,0,190,150,16,"url(#porcelain)")
-    for x in [32,82,132]:
-        out+=box(x,23,17,26,102,9,"deep","side","deep")
-        for yy in [41,75,108]:
-            cx,cy=point(x+13,yy,29)
-            plant=path("M0 0V-25",stroke="metalmid",width=2)
-            plant+=path("M0 -12Q-18 -33 -20 -16Q-17 -9 0 -12M0 -19Q17 -41 18 -22Q12 -16 0 -19", "metalmid","metalhi",.6)
-            out+=group(group(plant,cls="growth"),f"translate({cx} {cy})")
-    # Repeated arches make a greenhouse, not an arbitrary glass box.
-    for x in [9,65,123,180]:
-        a=point(x,10,18);b=point(x,10,102);c=point(x,75,164);d=point(x,140,102);e=point(x,140,18)
-        out+=path(f"M{a[0]} {a[1]}L{b[0]} {b[1]}Q{c[0]} {c[1]} {d[0]} {d[1]}L{e[0]} {e[1]}",stroke="metalmid",width=2)
-    for yy,zz in [(10,101),(75,133),(140,101)]:
-        out+=iso_line([(9,yy,zz),(180,yy,zz)],"edge",1.2)
-    out+=poly([point(9,140,17),point(180,140,17),point(180,140,102),point(9,140,102)],"url(#glass)","edge")
-    return group(out,"translate(-239 -103)")
+def abundance(theme,x0,y0,cols,pitch,size):
+    """Empty days as one path; each column's lit cells bloom in turn as the cost of trying falls."""
+    colors=ABUNDANCE[theme]
+    base=''.join(cell_path(x0+c*pitch,y0+r*pitch,size,size*.2) for c in range(cols) for r in range(7))
+    out=f'<path d="{base}" fill="{colors[0]}"/>'
+    for c in range(cols):
+        levels={}
+        for r in range(7):
+            # More attempts as the cost falls, unevenly across industries, never all at once.
+            reach=(c+1)/cols
+            v=reach*(.55+.9*unit_noise(c,r))-.18*unit_noise(r,c+40)
+            level=0 if v<.16 else 1 if v<.38 else 2 if v<.6 else 3 if v<.82 else 4
+            if level:
+                levels.setdefault(level,[]).append(cell_path(x0+c*pitch,y0+r*pitch,size,size*.2))
+        if levels:
+            lit=''.join(f'<path d="{"".join(d)}" fill="{colors[l]}"/>' for l,d in sorted(levels.items()))
+            out+=group(lit,cls="bloom",extra=f'style="animation-delay:{c*10/cols:.2f}s"')
+    return out
 
 
 def ambition(theme,mobile=False):
-    w,h=(640,1200) if mobile else (1200,875)
+    w,h=(640,860) if mobile else (1200,875)
     m=36 if mobile else 64
     out=section_top(w,mobile,"05","AMBITION","CAPABILITY → PROSPERITY")
     if mobile:
@@ -776,25 +760,36 @@ def ambition(theme,mobile=False):
         out+=text(m,219,"bigger ambitions.",59,"ink",500,spacing=-2.6)
         for i,value in enumerate(["Make valuable work cheaper.","Help every industry attempt more."]):
             out+=text(m,285+i*38,value,26,"muted")
-        placements=[(56,464,.77),(334,662,.77),(56,868,.77)]
-        out+=path("M239 587C420 564 454 645 448 747S235 829 227 960",stroke="line",width=1.4)
-        out+=path("M239 587C420 564 454 645 448 747S235 829 227 960",stroke="glow",width=2,extra='class="flow"')
+        x0,y0,cols,pitch,size,top=180,520,19,22,17,390
+        label_size=13
     else:
         out+=text(m,164,"Make room for",72,"ink",500,spacing=-3.2)
         out+=text(m,247,"bigger ambitions.",72,"ink",500,spacing=-3.2)
         out+=text(m,314,"Make valuable work cheaper. Help every industry attempt more.",27,"muted")
-        placements=[(110,478,1),(454,432,1),(796,477,1)]
-        out+=path("M287 688C446 716 458 629 579 641S864 756 961 692",stroke="line",width=1.3)
-        out+=path("M287 688C446 716 458 629 579 641S864 756 961 692",stroke="glow",width=2,extra='class="flow"')
-    for (x,y,s),draw,cls,caption in zip(placements,[workshop,laboratory,greenhouse],["build-one","build-two","build-three"],["BUILD","DISCOVER","GROW"]):
-        out+=group(group(draw(),cls=cls),f"translate({x} {y}) scale({s})")
-        out+=label(x+145*s,y+248*s,caption,anchor="middle",size=17 if mobile else 13)
+        x0,y0,cols,pitch,size,top=210,530,36,26,20,392
+        label_size=11
+    right=x0+cols*pitch-(pitch-size)
+    # The cost of trying falls; underneath, every industry fills in.
+    curve=f"M{x0} {top+12}C{x0+(right-x0)*.35} {top+18} {x0+(right-x0)*.45} {y0-34} {right} {y0-28}"
+    out+=label(x0,top,"COST OF TRYING",size=label_size)
+    out+=path(curve,stroke="line",width=1.4)
+    out+=path(curve,stroke="glow",width=2.4,extra='pathLength="1" class="cost" stroke-linecap="round"')
+    for r,name in enumerate(INDUSTRIES):
+        out+=label(m,y0+r*pitch+size*.72,name,size=label_size)
+    out+=abundance(theme,x0,y0,cols,pitch,size)
+    legend_y=y0+7*pitch+24
+    out+=label(x0,legend_y,"TODAY",size=label_size)
+    out+=label(right,legend_y,"MORE",anchor="end",size=label_size)
+    lx=right-(64 if mobile else 50)
+    for i,color in enumerate(reversed(ABUNDANCE[theme])):
+        out+=f'<path d="{cell_path(lx-(i+1)*(size*.62+4),legend_y-size*.62+2,size*.62,size*.12)}" fill="{color}"/>'
+    out+=label(lx-5*(size*.62+4)-8,legend_y,"LESS",anchor="end",size=label_size)
     out+=line(m,h-103,w-m,h-103)
     out+=text(m,h-54,"Toward ASI. Toward shared abundance.",25 if mobile else 29,"ink",500,spacing=-.4)
     r,rcss=rail(h,mobile)
     out=r+out
     return svg("ambition",theme,w,h,"Make room for bigger ambitions.",
-               "I want AI to make economically valuable work dramatically cheaper, so people across every industry can attempt more. As we move toward ASI, I want to help turn that capability into broadly shared abundance. A precision workshop enables scientific instruments and a greenhouse, representing building, discovery and growth.",out,AMBITION_CSS+rcss)
+               "I want AI to make economically valuable work dramatically cheaper, so people across every industry can attempt more. As we move toward ASI, I want to help turn that capability into broadly shared abundance. Drawn as a contribution graph for whole industries: health, energy, materials, food, education, housing and science. As the cost of trying falls, every row fills in.",out,AMBITION_CSS+rcss)
 
 
 def contact(theme,mobile=False):
