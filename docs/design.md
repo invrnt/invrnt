@@ -6,6 +6,12 @@ A GitHub profile for Juan Camilo Grisales. It opens as GitHub's own contribution
 
 Interface on top, system underneath. There are no isometric illustrations. Each scene shows what a product produces as interface, at a fidelity close to the real thing, and lets the mechanism show through: entities outlined in a sentence, citations wired to their sources, files leaving one window for another. GitHub's own interface is set in Mona Sans; everything that belongs to Juan's products is set in Manrope. The one physical object, the ceramic control, is real 3D in GitHub's viewer.
 
+## Avatar
+
+`assets/avatar.png` is the profile picture: one porcelain day among eight unlit neighbours of the contribution graph, cut open by a line of amber light. The cut sits slightly below the middle, like the hero's split between Wednesday and Thursday, so the icon and the page make the same gesture.
+
+It was generated with an image model from a composition drawn in the profile's palette, then cropped to the central 72% so the lit cell still reads at 20 px and the neighbours run past the circle, as if the graph continued. GitHub does not allow setting avatars through the API; it is uploaded by hand in profile settings. The README does not reference it.
+
 ## Build
 
 ```sh
