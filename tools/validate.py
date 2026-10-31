@@ -32,7 +32,7 @@ class Readme(HTMLParser):
 
 
 files=sorted((ROOT/"assets").glob("*.svg"))
-check(len(files)==64,f"Expected 32 animated and 32 still variants, found {len(files)}")
+check(len(files)==72,f"Expected 32 animated scenes, 32 stills and 8 controls, found {len(files)}")
 for file in files:
     raw=file.read_text()
     doc=ET.fromstring(raw)
@@ -40,7 +40,7 @@ for file in files:
     check(doc.find(SVG+"desc") is not None,f"{file.name}: missing description")
     motion_rule="@media all" if file.stem.endswith('-still') else "prefers-reduced-motion:reduce"
     check(motion_rule in raw,f"{file.name}: no motion preference or static state")
-    check(file.stat().st_size<100_000,f"{file.name}: oversized asset")
+    check(file.stat().st_size<140_000,f"{file.name}: oversized asset")
     ids=[n.attrib["id"] for n in doc.iter() if "id" in n.attrib]
     check(len(ids)==len(set(ids)),f"{file.name}: duplicate IDs")
     for ref in re.findall(r"url\(#([^\)]+)\)",raw):
@@ -53,7 +53,10 @@ for file in files:
             check("href" not in key,f"{file.name}: external or interactive dependency")
     check("url(http" not in raw,f"{file.name}: network resource")
 
-Readme().feed((ROOT/"README.md").read_text())
+readme=(ROOT/"README.md").read_text()
+Readme().feed(readme)
+check(readme.count("```stl")==1,"README should embed the control in GitHub's inline 3D viewer")
+check(len(readme.encode())<150_000,"README is too heavy")
 
 # Weld vertices only for topology validation; the STL itself keeps full precision.
 model=(ROOT/"assets/control.stl").read_bytes()

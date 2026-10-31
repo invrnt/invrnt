@@ -7,6 +7,8 @@ from math import cos, sin, pi
 from pathlib import Path
 import struct
 
+from surface import CELL, DATA, GRID_X, GRID_Y, NATIVE, PITCH, calendar, feed, file_list, rrect
+
 ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "assets"
 FONTS = Path(__file__).parent / "fonts"
@@ -62,12 +64,19 @@ def group(body, transform="", cls="", extra=""):
     return f'<g transform="{transform}" class="{cls}" {extra}>{body}</g>'
 
 
-def svg(name, theme, width, height, title, desc, body, css=""):
+def font_face(family, file, weight):
+    data = b64encode((FONTS / file).read_bytes()).decode()
+    return f"@font-face{{font-family:{family};src:url(data:font/woff2;base64,{data}) format('woff2');font-weight:{weight}}}"
+
+
+def svg(name, theme, width, height, title, desc, body, css="", native=False, defs=""):
     palette = PALETTES[theme]
     variables = ";".join(f"--{k}:{v}" for k, v in palette.items())
     palette = {k:f"var(--{k})" for k in palette}
-    regular = b64encode((FONTS / "manrope-regular.woff2").read_bytes()).decode()
-    semibold = b64encode((FONTS / "manrope-semibold.woff2").read_bytes()).decode()
+    fonts = font_face("Manrope", "manrope-regular.woff2", 400) + font_face("Manrope", "manrope-semibold.woff2", "500 800")
+    if native:
+        # GitHub's own typeface, so the imitated interface matches the page around it.
+        fonts += font_face("MonaSans", "mona-sans-regular.woff2", 400) + font_face("MonaSans", "mona-sans-semibold.woff2", "500 800")
     return f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">
 <title id="title">{escape(title)}</title>
 <desc id="desc">{escape(desc)}</desc>
@@ -79,17 +88,19 @@ def svg(name, theme, width, height, title, desc, body, css=""):
 <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="{palette['metalhi']}" stop-opacity=".13"/><stop offset=".55" stop-color="{palette['metalhi']}" stop-opacity=".01"/><stop offset="1" stop-color="{palette['metalhi']}" stop-opacity=".16"/></linearGradient>
 <radialGradient id="halo"><stop stop-color="{palette['gold']}" stop-opacity=".12"/><stop offset="1" stop-color="{palette['gold']}" stop-opacity="0"/></radialGradient>
 <filter id="shadow" x="-50%" y="-60%" width="200%" height="230%"><feGaussianBlur stdDeviation="14"/></filter>
+{defs}
 </defs>
 <style>
-@font-face{{font-family:Manrope;src:url(data:font/woff2;base64,{regular}) format('woff2');font-weight:400}}
-@font-face{{font-family:Manrope;src:url(data:font/woff2;base64,{semibold}) format('woff2');font-weight:500 800}}
+{fonts}
 :root{{{variables}}}
 svg{{font-family:Manrope,Arial,sans-serif;text-rendering:geometricPrecision}}
 .mono{{font-family:ui-monospace,'SFMono-Regular',Consolas,monospace}}
+.gh{{font-family:MonaSans,-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans',Helvetica,Arial,sans-serif}}
 .rotate{{animation:rotate 24s linear infinite;transform-box:fill-box;transform-origin:center}}
 .rotate-reverse{{animation:rotate 32s linear infinite reverse;transform-box:fill-box;transform-origin:center}}
 .pulse{{animation:pulse 5s ease-in-out infinite}}
 .flow{{stroke-dasharray:4 120;animation:flow 6s linear infinite}}
+.rail-pulse{{animation-duration:7s;animation-timing-function:cubic-bezier(.5,0,.5,1);animation-iteration-count:infinite}}
 @keyframes rotate{{to{{transform:rotate(360deg)}}}}
 @keyframes pulse{{0%,100%{{opacity:.35}}50%{{opacity:1}}}}
 @keyframes flow{{to{{stroke-dashoffset:-248}}}}
@@ -154,7 +165,7 @@ def arm(x,y,z,mirror=False,cls=""):
     return parts
 
 
-def machine():
+def machine(lid=True):
     out='<ellipse cx="475" cy="560" rx="390" ry="58" fill="var(--shadow)" opacity=".13" filter="url(#shadow)"/>'
     # A pair of finely milled feet, then the lower enclosure.
     for x,y in [(20,245),(495,245),(495,20)]:
@@ -196,6 +207,8 @@ def machine():
     for x,y in [(25,25),(535,25),(25,275),(535,275)]:
         internals+=fastener(x,y,19)
     out+=group(internals,cls="internals")
+    if not lid:
+        return out
     shell=poly([point(560,0,150),point(560,300,150),point(560,300,6),point(560,0,6)],"side")
     shell+=poly([point(0,300,150),point(560,300,150),point(560,300,6),point(0,300,6)],"middle")
     out+=group(shell,cls="shell")
@@ -220,49 +233,93 @@ def machine():
     return out
 
 
-HERO_CSS='''
-.lid{animation:lid 18s cubic-bezier(.45,0,.2,1) infinite}
-.internals{animation:internals 18s ease-in-out infinite}
-.shell{animation:shell 18s ease-in-out infinite}
-.arm-a{animation:arm-a 18s ease-in-out infinite;transform-origin:0 0}
-.arm-b{animation:arm-b 18s ease-in-out infinite;transform-origin:0 0}
-.shuttle{animation:shuttle 18s ease-in-out infinite}
-@keyframes lid{0%,12%,88%,100%{transform:translateY(0)}35%,65%{transform:translateY(-110px)}}
-@keyframes internals{0%,12%,92%,100%{opacity:.08}28%,72%{opacity:1}}
-@keyframes shell{0%,12%,92%,100%{opacity:1}28%,72%{opacity:0}}
-@keyframes arm-a{0%,25%,75%,100%{transform:rotate(0deg)}42%{transform:rotate(13deg)}58%{transform:rotate(-4deg)}}
-@keyframes arm-b{0%,27%,76%,100%{transform:rotate(0deg)}46%{transform:rotate(-14deg)}60%{transform:rotate(4deg)}}
-@keyframes shuttle{0%,30%,80%,100%{transform:translate(0,0)}52%,64%{transform:translate(39px,17px)}}
-@media(prefers-reduced-motion:reduce){.lid{transform:translateY(-72px)}.internals{opacity:1}.shell{opacity:0}}
-'''
+# The surface: GitHub's contribution graph and activity, redrawn at native size.
+# It splits between Wednesday and Thursday and the lower half drops away.
+CUT=32+35+4*13-1.5
+
+
+def hero_css(drop):
+    return f"""
+.upper{{animation:upper 20s linear infinite}}
+.lower{{animation:lower 20s linear infinite}}
+.cavity{{animation:cavity 20s ease-in-out infinite}}
+.seam{{animation:seam 20s linear infinite}}
+.slab{{animation:slab 20s ease-out infinite;transform-box:fill-box;transform-origin:top}}
+.flick{{animation:flick 20s steps(1) infinite}}
+.arm-a{{animation:arm-a 10s ease-in-out infinite;transform-origin:0 0}}
+.arm-b{{animation:arm-b 10s ease-in-out infinite;transform-origin:0 0}}
+.shuttle{{animation:shuttle 10s ease-in-out infinite}}
+@keyframes upper{{0%,13.9%,17.6%,100%{{transform:translate(0,0)}}14.2%{{transform:translate(-5px,0)}}14.8%{{transform:translate(3px,0)}}15.6%{{transform:translate(-2px,0)}}16.4%{{transform:translate(6px,0)}}17%{{transform:translate(-1px,0)}}}}
+@keyframes lower{{0%,13.9%{{transform:translate(0,0);animation-timing-function:steps(1)}}14.2%{{transform:translate(6px,1px)}}14.8%{{transform:translate(-4px,0)}}15.6%{{transform:translate(3px,2px)}}16.4%{{transform:translate(-6px,1px)}}17%{{transform:translate(0,3px);animation-timing-function:cubic-bezier(.6,0,.2,1)}}27%,84%{{transform:translate(0,{drop}px);animation-timing-function:cubic-bezier(.5,0,.3,1)}}94%,100%{{transform:translate(0,0)}}}}
+@keyframes cavity{{0%,17%,94%,100%{{opacity:0}}26%,84%{{opacity:1}}}}
+@keyframes seam{{0%,13.8%,96%,100%{{opacity:0}}14%,15%{{opacity:1}}15.3%{{opacity:.2}}16%,84%{{opacity:1}}92%{{opacity:.6}}}}
+@keyframes slab{{0%,17%,94%,100%{{transform:scaleY(0)}}21%,90%{{transform:scaleY(1)}}}}
+@keyframes flick{{0%,14%,17%,100%{{opacity:0}}14.5%,15.8%{{opacity:1}}15.2%,16.5%{{opacity:0}}}}
+@keyframes arm-a{{0%,100%{{transform:rotate(0deg)}}40%{{transform:rotate(13deg)}}62%{{transform:rotate(-4deg)}}}}
+@keyframes arm-b{{0%,100%{{transform:rotate(0deg)}}46%{{transform:rotate(-14deg)}}66%{{transform:rotate(4deg)}}}}
+@keyframes shuttle{{0%,12%,88%,100%{{transform:translate(0,0)}}40%,60%{{transform:translate(39px,17px)}}}}
+@media(prefers-reduced-motion:reduce){{.lower{{transform:translate(0,{drop}px)}}.cavity,.seam{{opacity:1}}.slab{{transform:none}}.flick{{opacity:0}}}}
+"""
 
 
 def hero(theme,mobile=False):
-    w,h=(640,990) if mobile else (1200,1110)
-    margin=36 if mobile else 64
-    out=label(margin,49 if mobile else 55,"JUAN CAMILO GRISALES", "ink",size=24 if mobile else 15)
-    if not mobile:
-        out+=label(w-margin,55,"INVRNT / COLOMBIA",anchor="end")
-    out+=line(margin,79,w-margin,79)
+    n=NATIVE[theme]
+    width=308 if mobile else 846
+    w=640 if mobile else 1200
+    k=w/width
+    weeks=DATA["weeks"][-19:] if mobile else DATA["weeks"]
+    pieces,box_w=calendar(n,width,weeks,years=not mobile)
+    stream,stream_bottom=feed(n,232,width,compact=mobile)
+    drop=350 if mobile else 640
+    h_px=max(stream_bottom+12,CUT+drop+120)
+    h=round(h_px*k)
+    box=rrect(.5,32.5,box_w-1,160,6,n["canvas"],n["border"])
+    upper=box.replace("/>",' clip-path="url(#above)"/>')+"".join(svg for y,svg in pieces if y<CUT)
+    lower=box.replace("/>",' clip-path="url(#below)"/>')+"".join(svg for y,svg in pieces if y>=CUT)+stream
+    # A few days flash amber as the surface fails.
+    sparks="".join(rrect(GRID_X+c*PITCH+.5,32+GRID_Y+r*PITCH+.5,9,9,2,"var(--glow)") for c,r in
+                   ([(3,2),(8,3),(14,3),(15,1),(31,3),(44,2)] if not mobile else [(2,3),(9,2),(14,3)]))
+    seam=f'<path d="M0 {CUT}H{width}" stroke="var(--glow)" stroke-width="1.5"/>'
+    seam+=f'<path d="M0 {CUT}H{width}" stroke="var(--glow)" stroke-width="7" opacity=".18"/>'
+    slab=f'<rect x="0" y="{CUT}" width="{box_w}" height="7" fill="url(#slab-face)"/>'
+    slab+=f'<rect x="0" y="{CUT+7}" width="{width}" height="46" fill="url(#slab-shadow)"/>'
+    native=group(group(group(upper,cls="upper")+group(sparks,cls="flick")+group(slab,cls="slab"),"")
+                 +group(group(lower+group(seam,cls="seam"),cls="lower")),f"scale({k:.5f})")
+    # Beneath the surface: a quiet drafting grid, the promise, and the machine that keeps it.
+    top=CUT*k
+    floor=(CUT+drop)*k
+    m=36 if mobile else 64
+    under=''
+    step=40
+    for x in range(step,w,step):
+        under+=line(x,top+14,x,floor,"faint",1)
+    for y in range(int(top)+step,int(floor),step):
+        under+=line(0,y,w,y,"faint",1)
     if mobile:
-        out+=text(margin,174,"More possible.",67,"ink",500,spacing=-3.6)
-        out+=text(margin,255,"Less in the way.",67,"ink",500,spacing=-3.6)
-        out+=text(margin,322,"Powerful systems. Simple experiences.",25,"muted")
-        out+=group(machine(),"translate(15 420) scale(.63)")
-        out+=label(margin,902,"AI ENGINEER & PRODUCT BUILDER",size=20)
-        out+=text(margin,948,"One intention. An entire machine behind it.",25,"muted")
+        under+=label(m,top+66,"BENEATH THE SURFACE","glow",size=17)
+        under+=text(m,top+152,"More possible.",64,"ink",500,spacing=-3.4)
+        under+=text(m,top+228,"Less in the way.",64,"ink",500,spacing=-3.4)
+        under+=text(m,top+288,"Powerful systems. Simple experiences.",24,"muted")
+        under+=group(machine(lid=False),f"translate(18 {top+250}) scale(.62)")
+        under+=label(m,floor-36,"JUAN CAMILO GRISALES · MEDELLÍN",size=16)
     else:
-        out+=text(margin,188,"More possible.",100,"ink",500,spacing=-5)
-        out+=text(margin,300,"Less in the way.",100,"ink",500,spacing=-5)
-        out+=text(margin,355,"Powerful systems. Simple experiences.",27,"muted")
-        out+=group(machine(),"translate(172 503) scale(.87)")
-        out+=label(margin,452,"THE QUIET MACHINE",size=13)
-        out+=label(margin,478,"ONE INTENTION IN.",size=11)
-        out+=line(margin,498,margin+42,498,"gold",2)
-        out+=label(w-margin,1042,"AI ENGINEER & PRODUCT BUILDER",anchor="end",size=13)
-        out+=label(w-margin,1072,"MEDELLÍN, CO · UTC−05",anchor="end",size=12)
+        under+=label(m,top+70,"BENEATH THE SURFACE","glow",size=13)
+        under+=line(m,top+90,m+42,top+90,"gold",2)
+        under+=label(w-m,top+70,"JUAN CAMILO GRISALES",anchor="end",size=13)
+        under+=label(w-m,top+98,"AI ENGINEER & PRODUCT BUILDER · MEDELLÍN, CO",anchor="end",size=11)
+        under+=text(m,top+212,"More possible.",100,"ink",500,spacing=-5)
+        under+=text(m,top+324,"Less in the way.",100,"ink",500,spacing=-5)
+        under+=text(m,top+382,"Powerful systems. Simple experiences.",27,"muted")
+        under+=group(machine(lid=False),f"translate(250 {top+250}) scale(.9)")
+    cavity=f'<g clip-path="url(#cavity)">{group(under,cls="cavity")}</g>'
+    defs=(f'<clipPath id="above"><rect width="{width}" height="{CUT}"/></clipPath>'
+          f'<clipPath id="below"><rect y="{CUT}" width="{width}" height="{h_px}"/></clipPath>'
+          f'<clipPath id="cavity"><rect y="{top:.1f}" width="{w}" height="{floor-top:.1f}"/></clipPath>'
+          '<linearGradient id="slab-face" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--middle)"/><stop offset="1" stop-color="var(--edge)"/></linearGradient>'
+          '<linearGradient id="slab-shadow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="var(--shadow)" stop-opacity=".32"/><stop offset="1" stop-color="var(--shadow)" stop-opacity="0"/></linearGradient>')
     return svg("hero",theme,w,h,"Juan Camilo Grisales. More possible. Less in the way.",
-               "AI engineer and product builder in Medellín, Colombia. A single ceramic control sits on a quiet desk. The lid lifts to reveal a precision machine: memory, a reasoning core, articulated arms and a balanced output. The mechanism returns to one simple control.",out,HERO_CSS)
+               f"What looks like GitHub's own contribution graph and activity feed ({DATA['total']:,} contributions in the last year) splits open between Wednesday and Thursday. The lower half drops away. Beneath the surface: More possible. Less in the way. Powerful systems, simple experiences. A precision machine works quietly under the interface. AI engineer and product builder in Medellín, Colombia.",
+               cavity+native,hero_css(drop),native=True,defs=defs)
 
 
 def waveform(x,y,width=190,height=24,step=8,cls="voice"):
@@ -275,9 +332,34 @@ def waveform(x,y,width=190,height=24,step=8,cls="voice"):
     return out
 
 
+def rail_x(mobile):
+    return 14 if mobile else 28
+
+
+def rail(h,mobile,top=0,bottom=None,route=None,socket_top=False,socket_bottom=False):
+    """One signal line runs down the whole page. Every scene draws its own stretch at the same x."""
+    x=rail_x(mobile)
+    bottom=h if bottom is None else bottom
+    d=route or f"M{x} {top}V{bottom}"
+    length=round(bottom-top) if route is None else 2600
+    out=path(d,stroke="line",width=1.5)
+    out+=path(d,stroke="glow",width=2.4,extra=f'stroke-linecap="round" stroke-dasharray="70 {length+140}" class="rail-pulse" style="animation-name:rail-{length}"')
+    css=f"@keyframes rail-{length}{{from{{stroke-dashoffset:70}}to{{stroke-dashoffset:-{length}}}}}"
+    for y,present in [(top,socket_top),(bottom,socket_bottom)]:
+        if present:
+            out+=rect(x-7,y-4 if y else 0,14,8,2,"paper","edge")+line(x-3,y,x+3,y,"gold",1.5)
+    return out,css
+
+
+def node(x,y,cls="pulse"):
+    return circle(x,y,7,"bg","gold",1.5)+circle(x,y,2.6,"glow","none",extra=f'class="{cls}"')
+
+
 def section_top(w,mobile,number,name,meta):
     m=36 if mobile else 64
-    out=line(m,20,w-m,20)
+    x=rail_x(mobile)
+    y=63 if mobile else 64
+    out=line(x+7,y,m-12,y,"gold",1.2)+node(x,y)
     out+=label(m,69,number+" / "+name,"ink",size=18 if mobile else 15)
     if not mobile:
         out+=label(w-m,69,meta,anchor="end",size=12)
@@ -365,16 +447,19 @@ def count(theme,mobile=False):
         out+=group(count_engine(),"translate(890 410)")
         out+=group(text(686,639,"Bancolombia",22,"muted")+text(686,682,"− US$5,000",30,"ink",500)+
                    text(1100,639,"Kevin · receivable",22,"muted",anchor="end")+text(1100,682,"+ US$5,000",30,"ink",500,"end"),cls="journal")
-        out+=line(m,732,w-m,732)
+        out+=line(m,732,w-m,732,"line")
         out+=label(m,770,"SAY IT NATURALLY.",size=13)+label(w-m,770,"KEEP EVERY DETAIL.",anchor="end",size=13)
+    r,rcss=rail(h,mobile,socket_top=True,socket_bottom=True)
+    out=r+out
     return svg("count",theme,w,h,"Count. Finance, in your own words. Product concept, in development.",
-               "An illustrated voice note lends Kevin US$5,000 from a Bancolombia Pod at 12% interest. Count asks whether the rate is effective annual or monthly. Annual is selected. A bank decrease and an equal receivable are recorded; the twelve-month dial represents time-aware accounting. This is a product concept, not a live app.",out,COUNT_CSS)
+               "An illustrated voice note lends Kevin US$5,000 from a Bancolombia Pod at 12% interest. Count asks whether the rate is effective annual or monthly. Annual is selected. A bank decrease and an equal receivable are recorded; the twelve-month dial represents time-aware accounting. This is a product concept, not a live app.",out,COUNT_CSS+rcss)
 
 
 def architecture(theme,mobile=False):
     w,h=(640,1100) if mobile else (1200,860)
     m=36 if mobile else 64
-    out=label(m,51,"INSIDE COUNT",size=17 if mobile else 14)
+    out=line(rail_x(mobile)+7,46,m-12,46,"gold",1.2)+node(rail_x(mobile),46)
+    out+=label(m,51,"INSIDE COUNT",size=17 if mobile else 14)
     out+=text(m,117,"Simple is engineered.",44 if mobile else 53,"ink",500,spacing=-2)
     # A vertical stack acts as a legible, physical architecture diagram.
     plates=''
@@ -407,8 +492,10 @@ def architecture(theme,mobile=False):
     if not mobile:
         out+=path("M935 254v516",stroke="line",width=1)
         out+=path("M935 254v516",stroke="glow",width=2,extra='stroke-dasharray="8 100" class="flow"')
+    r,rcss=rail(h,mobile,socket_bottom=True)
+    out=r+out
     return svg("architecture",theme,w,h,"Inside Count. Simple is engineered.",
-               "Five layers of the planned system: understand intent from voice, text and receipts; ask about missing context; record exact balanced entries in account-specific Pods; account for time; return a clear result with inspectable records.",out)
+               "Five layers of the planned system: understand intent from voice, text and receipts; ask about missing context; record exact balanced entries in account-specific Pods; account for time; return a clear result with inspectable records.",out,rcss)
 
 
 PRODUCT_CSS='''
@@ -526,6 +613,64 @@ def bento_art():
     return out
 
 
+def local_box(filled=True):
+    # The same enclosure as before, without the floating files: rows from the list land here.
+    out='<ellipse cx="315" cy="406" rx="231" ry="33" fill="var(--shadow)" opacity=".1" filter="url(#shadow)"/>'
+    out+=group(box(0,0,0,300,183,19,"url(#porcelain)"),"translate(-16 70)")
+    out+=group(box(10,12,20,279,158,13,"well","side","deep"),"translate(-16 70)")
+    for i,(x,y) in enumerate([(36,35),(134,35),(222,35),(36,114),(134,114),(222,114)]):
+        out+=group(group(box(x,y,36,58,38,18,"url(#metal)"),cls="settle",extra=f'style="animation-delay:{i*.42:.2f}s"'),"translate(-16 70)")
+    near=poly([point(0,183,60),point(300,183,60),point(300,183,19),point(0,183,19)],"url(#porcelain)")
+    near+=poly([point(300,0,60),point(300,183,60),point(300,183,19),point(300,0,19)],"side")
+    out+=group(near,"translate(-16 70)")
+    cx,cy=point(150,184,40)
+    out+=group(label(0,0,"LOCAL",size=13),f"translate({cx-16} {cy+70}) matrix(.94 .42 0 1 0 0)")
+    return out
+
+
+BENTO_CSS="""
+.peel{animation:peel 12s cubic-bezier(.55,0,.35,1) infinite;transform-box:fill-box;transform-origin:center}
+.settle{animation:settle 12s ease-out infinite}
+@keyframes peel{0%,10%{transform:translate(0,0) scale(1);opacity:1}24%{opacity:.85}30%,80%{transform:translate(var(--dx),var(--dy)) scale(.12);opacity:0}80.1%{transform:translate(0,0) scale(1);opacity:0}92%,100%{transform:translate(0,0) scale(1);opacity:1}}
+@keyframes settle{0%,24%,94%,100%{opacity:.25}34%,86%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.peel{transform:none;opacity:1}.settle{opacity:1}}
+"""
+
+
+def bento(theme,mobile=False):
+    n=NATIVE[theme]
+    w,h=(640,1300) if mobile else (1200,860)
+    m=36 if mobile else 64
+    out=section_top(w,mobile,"04","BENTO","")
+    out+=text(m,149 if mobile else 197,"Yours to keep.",55 if mobile else 57,"ink",500,spacing=-2.7)
+    for i,value in enumerate(["A local-first home","for your files."]):
+        out+=text(m,(209 if mobile else 255)+i*37,value,29 if mobile else 26,"muted")
+    out+=label(m,296 if mobile else 368,"VIEW THE SOURCE ↗","glow",size=17 if mobile else 13)
+    # GitHub's own file table, then the files leave it for a box on your desk.
+    k=w/(308 if mobile else 846)
+    list_x,list_y=(m,340) if mobile else (560,96)
+    list_w=round((w-m-list_x)/k)
+    rows=6 if mobile else 7
+    # The enclosure spans local y 195-440 and its opening is centred near (418, 324).
+    bx,by,bs=(320-418*1.05,975-195*1.05,1.05) if mobile else (870-418*.92,590-195*.92,.92)
+    box_place=f"translate({bx:.0f} {by:.0f}) scale({bs})"
+    landing=(bx+418*bs,by+324*bs)
+    frame,body=file_list(n,list_w,rows)
+    peeled=""
+    for i,row in enumerate(body):
+        cy=49+i*37+18
+        dx=(landing[0]-list_x)/k-list_w/2
+        dy=(landing[1]-list_y)/k-cy
+        # The bottom row leaves first, so every row falls through space that is already clear.
+        peeled+=f'<g class="peel" style="--dx:{dx:.0f}px;--dy:{dy:.0f}px;animation-delay:{(len(body)-1-i)*.3:.2f}s">{row}</g>'
+    out+=group(local_box(),box_place)
+    out+=group(frame+peeled,f"translate({list_x} {list_y}) scale({k:.5f})")
+    r,rcss=rail(h,mobile)
+    return svg("bento",theme,w,h,"Bento. Yours to keep.",
+               "Bento. A local-first home for your files. What looks like GitHub's own file list for the Bento repository comes apart: each row lifts away and settles into a porcelain enclosure labelled Local. Your files remain on your own device by default.",
+               r+out,BENTO_CSS+rcss,native=True)
+
+
 PRODUCTS={
     "classmate":("02","CLASSMATE STUDIO","Room to think.",["Course materials, recordings and AI.","One shared context."],classmate_art,
                  "Classmate Studio. Course materials, recordings and AI in one academic workspace. A voice recording and document join a shared, source-aware context, illustrated as an open book."),
@@ -548,7 +693,8 @@ def product(name,theme,mobile=False):
     out+=label(m,296 if mobile else 368,cta,"glow",size=17 if mobile else 13)
     placement=("translate(22 350) scale(.85)" if mobile else "translate(558 110) scale(.88)") if name=="bento" else ("translate(25 305) scale(.96)" if mobile else "translate(558 101) scale(.99)")
     out+=group(draw(),placement)
-    return svg(name,theme,w,h,title+". "+headline,desc,out,PRODUCT_CSS)
+    r,rcss=rail(h,mobile,socket_top=name=="classmate")
+    return svg(name,theme,w,h,title+". "+headline,desc,r+out,PRODUCT_CSS+rcss)
 
 
 AMBITION_CSS='''
@@ -645,72 +791,122 @@ def ambition(theme,mobile=False):
         out+=label(x+145*s,y+248*s,caption,anchor="middle",size=17 if mobile else 13)
     out+=line(m,h-103,w-m,h-103)
     out+=text(m,h-54,"Toward ASI. Toward shared abundance.",25 if mobile else 29,"ink",500,spacing=-.4)
+    r,rcss=rail(h,mobile)
+    out=r+out
     return svg("ambition",theme,w,h,"Make room for bigger ambitions.",
-               "I want AI to make economically valuable work dramatically cheaper, so people across every industry can attempt more. As we move toward ASI, I want to help turn that capability into broadly shared abundance. A precision workshop enables scientific instruments and a greenhouse, representing building, discovery and growth.",out,AMBITION_CSS)
+               "I want AI to make economically valuable work dramatically cheaper, so people across every industry can attempt more. As we move toward ASI, I want to help turn that capability into broadly shared abundance. A precision workshop enables scientific instruments and a greenhouse, representing building, discovery and growth.",out,AMBITION_CSS+rcss)
 
 
 def contact(theme,mobile=False):
-    w,h=(640,420) if mobile else (1200,414)
+    w,h=(640,430) if mobile else (1200,430)
     m=36 if mobile else 64
-    out=line(m,20,w-m,20)
-    out+=label(m,68,"THE NEXT THING",size=17 if mobile else 14)
+    x=rail_x(mobile)
+    out=line(x+7,64,m-12,64,"gold",1.2)+node(x,64)
+    out+=label(m,69,"THE NEXT THING",size=17 if mobile else 14)
     out+=text(m,151,"What should" if mobile else "What should become simpler?",57 if mobile else 58,"ink",500,spacing=-2.6)
     if mobile:
         out+=text(m,216,"become simpler?",57,"ink",500,spacing=-2.6)
     out+=text(m,281 if mobile else 211,"Let's build it.",32,"muted")
-    # The entire machine resolves to the same simple control as the opening.
+    # The whole signal, from the surface down, resolves into the same simple control.
     mark=circle(0,0,45,"url(#metal)","edge")+circle(0,0,36,"url(#porcelain)","edge")
     mark+=circle(0,0,28,"none","gold",1)
     mark+=line(-9,0,9,0,"glow",2.5,extra='class="pulse" stroke-linecap="round"')
     if mobile:
-        out+=group(mark,"translate(550 350) scale(.65)")
+        cx,cy,r,turn=550,330,29,392
         out+=label(m,362,"INVRNT",size=17)
     else:
-        out+=group(mark,"translate(1070 276)")
+        cx,cy,r,turn=1070,276,45,372
         out+=label(m,332,"JUAN CAMILO GRISALES",size=14)
         out+=label(m,364,"MEDELLÍN, COLOMBIA",size=12)
+    route=f"M{x} 0V{turn-20}Q{x} {turn} {x+20} {turn}H{cx-20}Q{cx} {turn} {cx} {turn-20}V{cy+r}"
+    r_svg,rcss=rail(h,mobile,route=route)
+    out=r_svg+out
+    out+=group(mark,f"translate({cx} {cy})"+(" scale(.65)" if mobile else ""))
     return svg("contact",theme,w,h,"What should become simpler? Let's build it.",
-               "Contact Juan Camilo Grisales at juan@juancamilo.me or visit juancamilo.me. The precision machine resolves to one simple ceramic control.",out)
+               "Contact Juan Camilo Grisales at juan@juancamilo.me or visit juancamilo.me. The signal that ran through the whole profile ends in one simple ceramic control.",out,rcss)
+
+
+# Physical controls are drawn in fixed porcelain so they read on either GitHub theme.
+# They need no theme switch, so they can be real links, and no motion, so no still copy.
+NEUTRAL=PALETTES["light"]
+
+
+def port(mobile=False):
+    w,h=(640,170) if mobile else (1200,150)
+    x=rail_x(mobile)
+    cy=h/2
+    m=36 if mobile else 64
+    cap_w=568 if mobile else 470
+    out=path(f"M{x} 0V{h}",stroke="#7d8a84",width=1.5,extra='stroke-opacity=".55"')
+    out+=line(x+7,cy,m,cy,"gold",1.2)+circle(x,cy,7,"top","gold",1.5)+circle(x,cy,2.6,"glow","none")
+    out+=f'<ellipse cx="{m+cap_w/2}" cy="{cy+44}" rx="{cap_w/2-20}" ry="10" fill="#000" opacity=".16" filter="url(#shadow)"/>'
+    out+=rect(m,cy-36,cap_w,80,40,"side","edge")
+    out+=rect(m,cy-42,cap_w,80,40,"url(#porcelain)","edge")
+    out+=circle(m+42,cy-2,19,"url(#brass)","goldlo")+circle(m+42,cy-2,11,"deep","metalhi")+circle(m+42,cy-2,3.4,"goldhi","none")
+    out+=text(m+78,cy+8,"Open the machine",34 if mobile else 30,"ink",500,spacing=-.6)
+    out+=label(m+cap_w-34,cy+4,"↓",fill="glow",anchor="end",size=20 if mobile else 18)
+    if not mobile:
+        out+=label(m+cap_w+28,cy-6,"INSIDE COUNT",size=13)
+        out+=label(m+cap_w+28,cy+20,"FIVE LAYERS · ONE CONTROL IN 3D",size=11)
+    return svg("port","light",w,h,"Open the machine",
+               "A porcelain button on the signal line. Opening it shows how Count is built and a 3D model of the control.",out)
+
+
+KEYS=[("website","Website","juancamilo.me","https://juancamilo.me"),
+      ("email","Email","juan@juancamilo.me","mailto:juan@juancamilo.me"),
+      ("source","Repositories","github.com/invrnt","https://github.com/invrnt?tab=repositories")]
+
+
+def key(name,mobile=False):
+    _,title,caption,_=next(k for k in KEYS if k[0]==name)
+    w,h=(214,190) if mobile else (400,150)
+    x0,x1,top,face=(12,202,22,118) if mobile else (24,376,16,98)
+    out=f'<ellipse cx="{w/2}" cy="{top+face+18}" rx="{(x1-x0)/2-10}" ry="10" fill="#000" opacity=".2" filter="url(#shadow)"/>'
+    out+=rect(x0,top+12,x1-x0,face,18,"side","edge")
+    out+=rect(x0,top,x1-x0,face,18,"url(#porcelain)","edge")
+    out+=line(x0+18,top+1.5,x1-18,top+1.5,"white",1.2,'stroke-opacity=".9"')
+    out+=circle(x1-26,top+24,4.5,"glow","none")+circle(x1-26,top+24,9,"none","gold",1)
+    if mobile:
+        out+=text(x0+20,top+64,title if len(title)<10 else "Repos",34,"ink",500,spacing=-.8)
+        out+=label(x0+20,top+96,"↗",fill="glow",size=22)
+    else:
+        out+=text(x0+30,top+50,title,30,"ink",500,spacing=-.6)
+        out+=label(x0+30,top+78,caption+" ↗",size=12)
+    return svg("key","light",w,h,title,f"{title}: {caption}. A porcelain key that opens the link.",out)
 
 
 SCENES={"hero":hero,"count":count,"architecture":architecture,
-        **{name:(lambda t,m,n=name:product(n,t,m)) for name in PRODUCTS},
-        "ambition":ambition,"contact":contact}
+        **{name:(lambda t,m,n=name:product(n,t,m)) for name in ["classmate","orientador"]},
+        "bento":bento,"ambition":ambition,"contact":contact}
+
+
+def sources(base,still=True):
+    out=""
+    if still:
+        out+=f'<source media="(max-width: 600px) and (prefers-reduced-motion: reduce)" srcset="assets/{base[0]}-still.svg">'
+        out+=f'<source media="(prefers-reduced-motion: reduce)" srcset="assets/{base[1]}-still.svg">'
+    return out+f'<source media="(max-width: 600px)" srcset="assets/{base[0]}.svg">'
 
 
 def picture(name,alt,href=None):
+    """Both themes of one scene. align=top removes the inline baseline gap, so scenes join seamlessly."""
     alt=escape(alt,quote=True)
     blocks=[]
     for theme in PALETTES:
-        target=href if href and not href.startswith('mailto:') else ("https://juancamilo.me" if href else f"assets/{name}-{theme}.svg")
-        blocks.append(f'''<a href="{target}#gh-{theme}-mode-only">
-<picture>
-  <source media="(max-width: 600px) and (prefers-reduced-motion: reduce)" srcset="assets/{name}-mobile-{theme}-still.svg">
-  <source media="(prefers-reduced-motion: reduce)" srcset="assets/{name}-{theme}-still.svg">
-  <source media="(max-width: 600px)" srcset="assets/{name}-mobile-{theme}.svg">
-  <img src="assets/{name}-{theme}.svg" width="100%" alt="{alt}">
-</picture>
-</a>''')
+        target=href or f"assets/{name}-{theme}.svg"
+        blocks.append(f'<a href="{target}#gh-{theme}-mode-only"><picture>{sources((f"{name}-mobile-{theme}",f"{name}-{theme}"))}'
+                      f'<img src="assets/{name}-{theme}.svg" width="100%" align="top" alt="{alt}"></picture></a>')
     return "\n".join(blocks)
 
 
-def readme():
-    parts=["<!-- Generated with python3 tools/build.py. Text edition below. -->",
-           picture("hero","Juan Camilo Grisales, AI engineer and product builder in Medellín, Colombia. More possible. Less in the way. Powerful systems, simple experiences."),
-           '<p align="center">\n  <a href="https://juancamilo.me">Website ↗</a> &nbsp; · &nbsp; <a href="mailto:juan@juancamilo.me">Email ↗</a>\n</p>',
-           picture("count","Count. Finance, in your own words. Product concept, in development. A voice note becomes a precise, balanced financial record. When a rate is ambiguous, Count asks a clear question."),
-           '<details>\n<summary>Open the machine</summary>\n',
-           picture("architecture","Inside Count. Simple is engineered: intent, clarification, exact double-entry records, time-aware calculations, and an inspectable result."),
-           "Count is in development. The animation illustrates the intended experience. Its design combines account-specific Pods, double-entry accounting and time-aware calculations. Ambiguity becomes a clear question. The detail stays available.",
-           "[Inspect the control in 3D ↗](assets/control.stl)",
-           '</details>',
-           picture("classmate","Classmate Studio. Room to think. Course materials, recordings and AI in one shared context. Explore Classmate.","https://classmate.studio"),
-           picture("orientador","Orientador. Time to listen. AI-assisted documentation for school counselors, with professional review. Explore Orientador.","https://orientador.co"),
-           picture("bento","Bento. Yours to keep. A local-first home for your files. Explore the source.","https://github.com/invrnt/bento"),
-           picture("ambition","Make room for bigger ambitions. I want AI to make economically valuable work cheaper and help every industry attempt more. Toward ASI, toward broadly shared abundance."),
-           picture("contact","What should become simpler? Let's build it. Contact Juan Camilo Grisales.","mailto:juan@juancamilo.me"),
-           '<p align="center">\n  <a href="mailto:juan@juancamilo.me">juan@juancamilo.me ↗</a> &nbsp; · &nbsp; <a href="https://juancamilo.me">juancamilo.me ↗</a>\n</p>',
-           '''<details>
+def neutral(name,alt,width="100%",href=None):
+    """A theme-neutral control. Without a theme fragment it can sit inside a summary or point at mailto."""
+    img=(f'<picture>{sources((f"{name}-mobile",name),still=False)}'
+         f'<img src="assets/{name}.svg" width="{width}" align="top" alt="{escape(alt,quote=True)}"></picture>')
+    return f'<a href="{href}">{img}</a>' if href else img
+
+
+TEXT_EDITION="""<details>
 <summary>Text edition</summary>
 
 # Juan Camilo Grisales
@@ -732,19 +928,39 @@ What should become simpler? [Let's build it](mailto:juan@juancamilo.me).
 
 [Website](https://juancamilo.me) · [Email](mailto:juan@juancamilo.me)
 
-</details>''']
+</details>"""
+
+
+def readme():
+    surface=[picture("hero",f"What looks like GitHub's own contribution graph splits open. Beneath the surface: Juan Camilo Grisales, AI engineer and product builder in Medellín, Colombia. More possible. Less in the way. Powerful systems, simple experiences."),
+             picture("count","Count. Finance, in your own words. Product concept, in development. A voice note becomes a precise, balanced financial record. When a rate is ambiguous, Count asks a clear question.")]
+    work=[picture("classmate","Classmate Studio. Room to think. Course materials, recordings and AI in one shared context. Explore Classmate.","https://classmate.studio"),
+          picture("orientador","Orientador. Time to listen. AI-assisted documentation for school counselors, with professional review. Explore Orientador.","https://orientador.co"),
+          picture("bento","Bento. Yours to keep. A local-first home for your files. View the source.","https://github.com/invrnt/bento"),
+          picture("ambition","Make room for bigger ambitions. I want AI to make economically valuable work cheaper and help every industry attempt more. Toward ASI, toward broadly shared abundance."),
+          picture("contact","What should become simpler? Let's build it. Contact Juan Camilo Grisales."),
+          "".join(neutral(f"key-{name}",f"{title}: {caption}","33.333%",href) for name,title,caption,href in KEYS)]
+    parts=["<!-- Generated with python3 tools/build.py. Edit the builder, not this file. -->",
+           "<p>\n"+"\n".join(surface)+"\n</p>",
+           "<details>\n<summary>"+neutral("port","Open the machine: how Count is built, and the control in 3D")+"</summary>",
+           "<p>\n"+picture("architecture","Inside Count. Simple is engineered: intent, clarification, exact double-entry records, time-aware calculations, and an inspectable result.")+"\n</p>",
+           "Count is in development. The animation illustrates the intended experience. Its design combines account-specific Pods, double-entry accounting and time-aware calculations. Ambiguity becomes a clear question. The detail stays available.",
+           "The one control that everything resolves to. Drag to turn it.",
+           "```stl\n"+control_stl_ascii()+"```",
+           "</details>",
+           "<p>\n"+"\n".join(work)+"\n</p>",
+           TEXT_EDITION]
     return "\n\n".join(parts)+"\n"
 
 
-def control_stl():
-    """A closed, rotationally symmetric control for GitHub's native 3D viewer."""
+def control_facets(segments=96):
+    """A closed, rotationally symmetric control: (normal, a, b, c) for each facet."""
     profiles=[[(0,0),(58,0),(62,3),(62,10),(58,14),(0,14)],
               [(49,14.5),(52,14.5),(52,17),(49,17),(49,14.5)],
               [(0,15),(46,15),(47,17),(47,21),(45,23),(0,23)]]
-    triangles=[]
     for profile in profiles:
-        for i in range(96):
-            a,b=2*pi*i/96,2*pi*(i+1)/96
+        for i in range(segments):
+            a,b=2*pi*i/segments,2*pi*(i+1)/segments
             for (r0,z0),(r1,z1) in zip(profile,profile[1:]):
                 v=[(r0*cos(a),r0*sin(a),z0),(r0*cos(b),r0*sin(b),z0),
                    (r1*cos(b),r1*sin(b),z1),(r1*cos(a),r1*sin(a),z1)]
@@ -754,14 +970,29 @@ def control_stl():
                     length=sum(a*a for a in n)**.5
                     if length<1e-8:
                         continue
-                    n=[a/length for a in n]
-                    triangles.append(struct.pack('<12fH',*n,*p,*q,*r,0))
+                    yield [a/length for a in n],p,q,r
+
+
+def control_stl():
+    """The full-resolution study for GitHub's 3D file viewer."""
+    triangles=[struct.pack('<12fH',*n,*p,*q,*r,0) for n,p,q,r in control_facets()]
     header=b'The quiet machine / invrnt / control study / arbitrary units'.ljust(80,b'\0')
     return header+struct.pack('<I',len(triangles))+b''.join(triangles)
 
 
+def control_stl_ascii(segments=32):
+    """A lighter copy of the control for the README's inline viewer."""
+    facets=[]
+    for normal,*vertices in control_facets(segments):
+        facets.append("facet normal "+" ".join(f"{v:.3g}" for v in normal)+"\nouter loop\n"+
+                      "".join("vertex "+" ".join(f"{c:.4g}" for c in v)+"\n" for v in vertices)+"endloop\nendfacet\n")
+    return "solid control\n"+"".join(facets)+"endsolid control\n"
+
+
 def build():
     ASSETS.mkdir(exist_ok=True)
+    for old in ASSETS.glob("*.svg"):
+        old.unlink()
     for name,fn in SCENES.items():
         for theme in PALETTES:
             for mobile in (False,True):
@@ -772,6 +1003,12 @@ def build():
                 still=ASSETS/f"{name}{suffix}-{theme}-still.svg"
                 still.write_text(artwork.replace('@media(prefers-reduced-motion:reduce)','@media all'))
                 print(f"{target.relative_to(ROOT)}  {target.stat().st_size:,} bytes")
+    controls={"port":port,**{f"key-{k[0]}":(lambda mobile,k=k[0]:key(k,mobile)) for k in KEYS}}
+    for name,fn in controls.items():
+        for mobile in (False,True):
+            target=ASSETS/f"{name}{'-mobile' if mobile else ''}.svg"
+            target.write_text(fn(mobile))
+            print(f"{target.relative_to(ROOT)}  {target.stat().st_size:,} bytes")
     (ROOT/"README.md").write_text(readme())
     (ASSETS/"control.stl").write_bytes(control_stl())
 
