@@ -19,7 +19,7 @@ QUERY = """
 query($login:String!,$from:DateTime!,$to:DateTime!){
   user(login:$login){
     year:contributionsCollection{
-      contributionCalendar{totalContributions weeks{contributionDays{date weekday contributionCount contributionLevel}}}
+      contributionCalendar{totalContributions isHalloween weeks{contributionDays{date weekday contributionCount contributionLevel}}}
     }
     month:contributionsCollection(from:$from,to:$to){
       restrictedContributionsCount
@@ -59,6 +59,7 @@ def fetch():
         "month": now.strftime("%B"),
         "year": now.year,
         "total": calendar["totalContributions"],
+        "season": "halloween" if calendar["isHalloween"] else "",
         "weeks": [[[d["date"], d["contributionCount"], levels[d["contributionLevel"]]] for d in week["contributionDays"]]
                   for week in calendar["weeks"]],
         "private": month["restrictedContributionsCount"],

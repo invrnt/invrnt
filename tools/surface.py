@@ -19,11 +19,13 @@ NATIVE = {
     "dark": dict(canvas="#0d1117", fg="#f0f6fc", muted="#9198a1", border="#3d444d", accent="#4493f8",
                  badge="#212830", timeline="#3d444d", timeline_opacity=.7, year="#1f6feb", success="#238636",
                  merged="#ab7df8", open="#3fb950", outline="#ffffff", outline_opacity=.05, button="#212830", folder="#7d8590",
-                 levels=["#151b23", "#033a16", "#196c2e", "#2ea043", "#56d364"]),
+                 levels=["#151b23", "#033a16", "#196c2e", "#2ea043", "#56d364"],
+                 halloween=["#151b23", "#fac68f", "#c46212", "#984b10", "#e3d04f"]),
     "light": dict(canvas="#ffffff", fg="#1f2328", muted="#59636e", border="#d1d9e0", accent="#0969da",
                   badge="#f6f8fa", timeline="#d1d9e0", timeline_opacity=.7, year="#0969da", success="#1f883d",
                   merged="#8250df", open="#1a7f37", outline="#010409", outline_opacity=.06, button="#f6f8fa", folder="#54aeff",
-                  levels=["#eff2f5", "#aceebb", "#4ac26b", "#2da44e", "#116329"]),
+                  levels=["#eff2f5", "#aceebb", "#4ac26b", "#2da44e", "#116329"],
+                  halloween=["#eff2f5", "#f0db3d", "#ffd642", "#f68c41", "#1f2328"]),
 }
 
 OCTICONS = {
@@ -85,6 +87,11 @@ def short_date(value):
 CELL_PATH = "h5a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2"
 
 
+def palette(n):
+    """GitHub dresses the calendar for Halloween; the imitation follows whatever the API reports."""
+    return n["halloween"] if DATA.get("season") == "halloween" else n["levels"]
+
+
 def cells(n, weeks, rows, extra=""):
     """One rounded-square path per level keeps 371 days small and crisp."""
     paths = {}
@@ -94,7 +101,7 @@ def cells(n, weeks, rows, extra=""):
             if row in rows:
                 x, y = GRID_X + col * PITCH + 2.5, 32 + GRID_Y + row * PITCH + .5
                 paths.setdefault(level, []).append(f"M{x:.1f} {y}{CELL_PATH}")
-    return "".join(f'<path d="{"".join(d)}" fill="{n["levels"][level]}" stroke="{n["outline"]}" '
+    return "".join(f'<path d="{"".join(d)}" fill="{palette(n)[level]}" stroke="{n["outline"]}" '
                    f'stroke-opacity="{n["outline_opacity"]}" {extra}/>' for level, d in sorted(paths.items()))
 
 
@@ -121,11 +128,15 @@ def calendar(n, width, weeks=None, years=True):
     legend_right = box_w - 41
     legend = t(legend_right, foot, "More", 12, n["muted"], anchor="end")
     x = legend_right - measure("More", 12) - 4 - 5 * PITCH + 3
-    for i, color in enumerate(n["levels"]):
+    for i, color in enumerate(palette(n)):
         legend += rrect(x + i * PITCH + .5, foot - 9.5, 9, 9, 2, color, n["outline"], f'stroke-opacity="{n["outline_opacity"]}"')
     legend += t(x - 5, foot, "Less", 12, n["muted"], anchor="end")
     if width > 600:
-        legend += t(GRID_X, foot, "Learn how we count contributions", 12, n["muted"])
+        x = GRID_X
+        if DATA.get("season") == "halloween":
+            legend += t(x, foot, "Happy Halloween!", 12, n["fg"])
+            x += measure("Happy Halloween!", 12) + 6
+        legend += t(x, foot, "Learn how we count contributions", 12, n["muted"])
     pieces.append((foot - 12, legend))
     if years:
         for i, year in enumerate([DATA["year"], DATA["year"] - 1, DATA["year"] - 2]):
