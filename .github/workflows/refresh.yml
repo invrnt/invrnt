@@ -1,0 +1,44 @@
+name: Refresh the surface
+
+# The hero imitates GitHub's own contribution graph and activity feed with real data.
+# Once a day, take a new snapshot, rebuild the scenes and commit only if something changed.
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-surface
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Snapshot GitHub data
+        env:
+          # A personal token sees the same counts as the public profile; the default token is a fallback.
+          GITHUB_TOKEN: ${{ secrets.PROFILE_TOKEN || secrets.GITHUB_TOKEN }}
+        run: python3 tools/fetch.py
+      - name: Build and validate
+        run: |
+          python3 tools/build.py
+          python3 tools/validate.py
+      - name: Commit changes
+        run: |
+          git add -A tools/data assets README.md
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Refresh the surface"
+          git push

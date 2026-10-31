@@ -12,7 +12,7 @@ python3 tools/validate.py
 
 The builder uses only Python's standard library and never touches the network. It reads `tools/data/github.json`, a snapshot written by `tools/fetch.py`, and writes `README.md`, 32 animated scenes, 32 corresponding stills, 8 theme-neutral controls and the STL study. Rebuilding produces byte-identical output.
 
-The snapshot is refreshed by hand for now: run `tools/fetch.py`, rebuild, commit. A scheduled refresh is planned outside GitHub Actions.
+`.github/workflows/refresh.yml` refreshes the snapshot daily and commits only when something changed. It uses a `PROFILE_TOKEN` secret if one exists and falls back to the workflow token. It can also be started by hand from the Actions tab.
 
 ## Files
 
